@@ -40,7 +40,7 @@ public interface CourseService {
 
     /**
      * Add one course section class according to following parameters:
-     * If some of parameters are invalid, throw {@link cn.edu.sustech.cs307.exception.IntegrityViolationException}
+     * If some parameters are invalid, throw {@link cn.edu.sustech.cs307.exception.IntegrityViolationException}
      *
      * @param sectionId
      * @param instructorId
@@ -86,15 +86,15 @@ public interface CourseService {
     /**
      * Return all satisfied CourseSections.
      * We will compare the all other fields in CourseSection besides the id.
-     * @param courseId if the key is non-existent, please throw an EntityNotFoundException.
-     * @param semesterId if the key is non-existent, please throw an EntityNotFoundException.
+     * @param courseId if the key is non-existent, please throw {@link cn.edu.sustech.cs307.exception.EntityNotFoundException}.
+     * @param semesterId if the key is non-existent, please throw {@link cn.edu.sustech.cs307.exception.EntityNotFoundException}.
      * @return
      */
     List<CourseSection> getCourseSectionsInSemester(String courseId, int semesterId);
 
     /**
-     * If there is no Course about specific id, throw EntityNotFoundException.
-     * @param sectionId if the key is non-existent, please throw an EntityNotFoundException.
+     * If there is no Course about specific id, throw {@link cn.edu.sustech.cs307.exception.EntityNotFoundException}.
+     * @param sectionId if the key is non-existent, please throw {@link cn.edu.sustech.cs307.exception.EntityNotFoundException}.
      * @return
      */
     Course getCourseBySection(int sectionId);
@@ -109,15 +109,15 @@ public interface CourseService {
 
     /**
      *
-     * @param classId if the key is non-existent, please throw an EntityNotFoundException.
+     * @param classId if the key is non-existent, please throw {@link cn.edu.sustech.cs307.exception.EntityNotFoundException}.
      * @return
      */
     CourseSection getCourseSectionByClass(int classId);
 
     /**
      *
-     * @param courseId  if the key is non-existent, please throw an EntityNotFoundException.
-     * @param semesterId if the key is non-existent, please throw an EntityNotFoundException.
+     * @param courseId  if the key is non-existent, please throw {@link cn.edu.sustech.cs307.exception.EntityNotFoundException}.
+     * @param semesterId if the key is non-existent, please throw {@link cn.edu.sustech.cs307.exception.EntityNotFoundException}.
      * @return
      */
     List<Student> getEnrolledStudentsInSemester(String courseId, int semesterId);

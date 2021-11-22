@@ -10,14 +10,11 @@ import java.time.DayOfWeek;
 import java.util.List;
 import java.util.Map;
 
-/**
- *
- */
 @ParametersAreNonnullByDefault
 public interface StudentService {
     /**
-     * The priority of EnrollResult should be (if not SUCCESS):
-     *
+     * 学生选课结果<p>
+     * The priority of EnrollResult should be (if not SUCCESS):<p>
      * COURSE_NOT_FOUND > ALREADY_ENROLLED > ALREADY_PASSED > PREREQUISITES_NOT_FULFILLED > COURSE_CONFLICT_FOUND > COURSE_IS_FULL > UNKNOWN_ERROR
      */
     enum EnrollResult {
@@ -26,7 +23,7 @@ public interface StudentService {
          */
         SUCCESS,
         /**
-         * Cannot found the course section
+         * Cannot find the course section
          */
         COURSE_NOT_FOUND,
         /**
@@ -38,6 +35,7 @@ public interface StudentService {
          */
         ALREADY_ENROLLED,
         /**
+         * 已经修过了这门课<p>
          * The course (of the section) is already passed by the student
          */
         ALREADY_PASSED,
@@ -81,7 +79,7 @@ public interface StudentService {
 
     /**
      * Add one student according to following parameters.
-     * If some of parameters are invalid, throw {@link cn.edu.sustech.cs307.exception.IntegrityViolationException}
+     * If some parameters are invalid, throw {@link cn.edu.sustech.cs307.exception.IntegrityViolationException}
      *
      * @param userId
      * @param majorId

@@ -4,6 +4,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 被实现的抽象类，无需改动
+ */
 public abstract class ServiceFactory {
     private final Map<Class<?>, Object> services = new HashMap<>();
 
