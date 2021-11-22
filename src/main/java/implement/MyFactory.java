@@ -7,7 +7,7 @@ import implement.services.*;
 import java.util.List;
 
 public class MyFactory extends ServiceFactory {
-    public MyFactory{
+    public MyFactory(){
         super();
         registerService(CourseService.class,new MyCourseService());
         registerService(DepartmentService.class,new MyDepartmentService());
