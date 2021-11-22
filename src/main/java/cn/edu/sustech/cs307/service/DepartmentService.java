@@ -10,8 +10,8 @@ public interface DepartmentService {
     /**
      *  if adding a new department which has the same name with an existing department,
      *  it should throw an {@code IntegrityViolationException}
-     * @param name
-     * @return
+     * @param name department name
+     * @return auto-generated department id
      */
     int addDepartment(String name);
 

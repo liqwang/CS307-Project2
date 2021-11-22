@@ -1,9 +1,3 @@
-create sequence course_section_id_seq
-    as integer;
-
-create sequence course_section_class_id_seq
-    as integer;
-
 create table if not exists course
 (
     id          varchar(20) not null
@@ -40,8 +34,6 @@ create table if not exists section
     total_capacity integer
 );
 
-alter sequence course_section_id_seq owned by section.id;
-
 create table if not exists instructor
 (
     id         serial
@@ -69,8 +61,6 @@ create table if not exists section_class
     location      varchar(30)
 );
 
-alter sequence course_section_class_id_seq owned by section_class.id;
-
 create table if not exists department
 (
     id   serial
@@ -78,6 +68,9 @@ create table if not exists department
             primary key,
     name varchar(30) not null
 );
+
+create unique index if not exists department_name_uindex
+    on department (name);
 
 create table if not exists major
 (
@@ -127,3 +120,5 @@ create table if not exists student_section
     constraint pk_student_section
         primary key (student_id, section_id)
 );
+
+
