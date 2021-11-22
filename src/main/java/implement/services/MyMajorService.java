@@ -3,8 +3,10 @@ package implement.services;
 import cn.edu.sustech.cs307.dto.Major;
 import cn.edu.sustech.cs307.service.MajorService;
 
+import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
 
+@ParametersAreNonnullByDefault
 public class MyMajorService implements MajorService {
     @Override
     public int addMajor(String name, int departmentId) {

@@ -14,7 +14,6 @@ public interface MajorService {
      * (usually rows referencing the row to remove through foreign keys in a relational database) shall be removed together.
      *
      * More specifically, when remove a major, the related students should be removed accordingly
-     * @param majorId
      */
     void removeMajor(int majorId);
 
@@ -22,8 +21,6 @@ public interface MajorService {
 
     /**
      * If there is no Major about specific id, throw EntityNotFoundException.
-     * @param majorId
-     * @return
      */
     Major getMajor(int majorId);
 

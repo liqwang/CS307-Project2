@@ -8,10 +8,12 @@ import cn.edu.sustech.cs307.dto.prerequisite.Prerequisite;
 import cn.edu.sustech.cs307.service.CourseService;
 
 import javax.annotation.Nullable;
+import javax.annotation.ParametersAreNonnullByDefault;
 import java.time.DayOfWeek;
 import java.util.List;
 import java.util.Set;
 
+@ParametersAreNonnullByDefault
 public class MyCourseService implements CourseService {
 
     @Override

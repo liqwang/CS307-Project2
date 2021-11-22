@@ -10,10 +10,7 @@ import java.util.List;
 public interface SemesterService {
     /**
      * Add one semester according to following parameters:
-     * If some of parameters are invalid, throw {@link cn.edu.sustech.cs307.exception.IntegrityViolationException}
-     * @param name
-     * @param begin
-     * @param end
+     * If some parameters are invalid, throw {@link cn.edu.sustech.cs307.exception.IntegrityViolationException}
      * @return the Semester id of new inserted line, if adding process is successful.
      */
     int addSemester(String name, Date begin, Date end);
@@ -23,7 +20,6 @@ public interface SemesterService {
      *  (usually rows referencing the row to remove through foreign keys in a relational database) shall be removed together.
      *
      * More specifically, when remove a semester, the related select course record should be removed accordingly.
-     * @param semesterId
      */
     void removeSemester(int semesterId);
 

@@ -3,9 +3,11 @@ package implement.services;
 import cn.edu.sustech.cs307.dto.Semester;
 import cn.edu.sustech.cs307.service.SemesterService;
 
+import javax.annotation.ParametersAreNonnullByDefault;
 import java.sql.Date;
 import java.util.List;
 
+@ParametersAreNonnullByDefault
 public class MySemesterService implements SemesterService {
     @Override
     public int addSemester(String name, Date begin, Date end) {

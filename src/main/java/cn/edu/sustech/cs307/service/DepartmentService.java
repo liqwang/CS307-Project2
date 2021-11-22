@@ -21,8 +21,6 @@ public interface DepartmentService {
 
     /**
      * If there is no Department about specific id, throw EntityNotFoundException.
-     * @param departmentId
-     * @return
      */
     Department getDepartment(int departmentId);
 }
