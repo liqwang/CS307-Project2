@@ -31,7 +31,8 @@ create table if not exists section
         constraint fk_semester
             references semester,
     name           varchar(50)                                                not null,
-    total_capacity integer
+    total_capacity integer,
+    left_capacity  integer
 );
 
 create table if not exists instructor
@@ -119,6 +120,11 @@ create table if not exists student_section
             references section,
     constraint pk_student_section
         primary key (student_id, section_id)
+);
+
+create table if not exists test
+(
+    path ltree[]
 );
 
 

@@ -28,17 +28,18 @@ public class MyStudentService implements StudentService {
 
     @Override
     public EnrollResult enrollCourse(int studentId, int sectionId) {
+        //同时要修改表section中的left_capacity
         return null;
     }
 
     @Override
     public void dropCourse(int studentId, int sectionId) throws IllegalStateException {
-
+        //同时要修改表section中的left_capacity
     }
 
     @Override
     public void addEnrolledCourseWithGrade(int studentId, int sectionId, @Nullable Grade grade) {
-
+        //同时要修改表section中的left_capacity
     }
 
     @Override
