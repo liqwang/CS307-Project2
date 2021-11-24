@@ -18,7 +18,7 @@ public class MyCourseService implements CourseService {
 
     @Override
     public void addCourse(String courseId, String courseName, int credit, int classHour, Course.CourseGrading grading, @Nullable Prerequisite prerequisite) {
-
+        //方法：直接用PrerequisiteTest的方法，将Prerequisite转成String，存到数据库中
     }
 
     @Override

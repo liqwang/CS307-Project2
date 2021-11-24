@@ -23,6 +23,8 @@ public class Course {
      */
     public Department department;
 
+    public String prerequisite;
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
