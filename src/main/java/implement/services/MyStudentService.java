@@ -1,5 +1,6 @@
 package implement.services;
 
+import cn.edu.sustech.cs307.database.SQLDataSource;
 import cn.edu.sustech.cs307.dto.Course;
 import cn.edu.sustech.cs307.dto.CourseSearchEntry;
 import cn.edu.sustech.cs307.dto.CourseTable;
@@ -9,7 +10,10 @@ import cn.edu.sustech.cs307.service.StudentService;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
+import java.sql.Connection;
 import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.time.DayOfWeek;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +34,23 @@ public class MyStudentService implements StudentService {
     public EnrollResult enrollCourse(int studentId, int sectionId) {
         //同时要修改表section中的left_capacity
         return null;
+    }
+    private boolean passAllPreCourse(Connection con,int studentId,int sectionId){
+        //1.获取所有通过的课的id
+        try {
+            String sql="select course_id\n" +
+                        "from section\n" +
+                        "where id in(\n" +
+                        "    select section_id\n" +
+                        "    from student_section\n" +
+                        "    where student_id=? and is_passed=true\n" +
+                        ");";
+            PreparedStatement ps = con.prepareStatement(sql);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return true;
+        //2.判断是否满足先修课条件
     }
 
     @Override

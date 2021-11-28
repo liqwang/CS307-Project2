@@ -24,8 +24,7 @@ public class MyDepartmentService implements DepartmentService {
             PreparedStatement ps=con.prepareStatement(sql,PreparedStatement.RETURN_GENERATED_KEYS);
             ps.setString(1,name);
             ps.executeUpdate();
-            ResultSet rs = ps.getGeneratedKeys();
-            return rs.getInt(1);
+            return ps.getGeneratedKeys().getInt(1);
         } catch (SQLException throwables) {
             throwables.printStackTrace();
             throw new IntegrityViolationException();
