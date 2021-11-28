@@ -3,6 +3,16 @@ package cn.edu.sustech.cs307.dto;
 import java.util.Objects;
 
 public class Course {
+
+    public Course(String id, String name, int credit, int classHour, CourseGrading grading, String prerequisite) {
+        this.id = id;
+        this.name = name;
+        this.credit = credit;
+        this.classHour = classHour;
+        this.grading = grading;
+        this.prerequisite = prerequisite;
+    }
+
     public enum CourseGrading {
         PASS_OR_FAIL, HUNDRED_MARK_SCORE
     }
@@ -27,7 +37,9 @@ public class Course {
     public int classHour;
 
     public CourseGrading grading;
-
+//    /**
+//     * 额外属性：一个课程应该有开课院系
+//     */
     public String prerequisite;
 
     @Override
