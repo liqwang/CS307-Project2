@@ -4,15 +4,6 @@ import java.util.Objects;
 
 public class Course {
 
-    public Course(String id, String name, int credit, int classHour, CourseGrading grading, String prerequisite) {
-        this.id = id;
-        this.name = name;
-        this.credit = credit;
-        this.classHour = classHour;
-        this.grading = grading;
-        this.prerequisite = prerequisite;
-    }
-
     public enum CourseGrading {
         PASS_OR_FAIL, HUNDRED_MARK_SCORE
     }
