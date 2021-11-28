@@ -57,10 +57,10 @@ create table if not exists section_class
         constraint fk_instructor
             references instructor,
     day_of_week   integer,
-    week          integer,
     class_begin   integer,
     class_end     integer,
-    location      varchar(30)
+    location      varchar(30),
+    "weekList"    integer[]
 );
 
 create table if not exists department
