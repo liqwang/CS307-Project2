@@ -60,7 +60,7 @@ create table if not exists section_class
     class_begin   integer,
     class_end     integer,
     location      varchar(30),
-    "weekList"    integer[]
+    week_list     integer[]
 );
 
 create table if not exists department
@@ -119,6 +119,7 @@ create table if not exists student_section
     section_id integer not null
         constraint fk_section
             references section,
+    mark       integer,
     constraint pk_student_section
         primary key (student_id, section_id)
 );
