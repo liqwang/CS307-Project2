@@ -9,6 +9,7 @@ import cn.edu.sustech.cs307.dto.prerequisite.AndPrerequisite;
 import cn.edu.sustech.cs307.dto.prerequisite.CoursePrerequisite;
 import cn.edu.sustech.cs307.dto.prerequisite.OrPrerequisite;
 import cn.edu.sustech.cs307.dto.prerequisite.Prerequisite;
+import cn.edu.sustech.cs307.exception.EntityNotFoundException;
 import cn.edu.sustech.cs307.exception.IntegrityViolationException;
 import cn.edu.sustech.cs307.service.CourseService;
 
@@ -16,6 +17,7 @@ import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.sql.*;
 import java.time.DayOfWeek;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -64,7 +66,21 @@ public class MyCourseService implements CourseService {
 
     @Override
     public int addCourseSection(String courseId, int semesterId, String sectionName, int totalCapacity) {
-        return 0;
+        try(Connection con= SQLDataSource.getInstance().getSQLConnection()) {
+            String sql="insert into section (course_id,semester_id,name,total_capacity,left_capacity) values (?,?,?,?,?)";
+            PreparedStatement ps = con.prepareStatement(sql,PreparedStatement.RETURN_GENERATED_KEYS);
+            ps.setString(1,courseId);
+            ps.setInt(2,semesterId);
+            ps.setString(3,sectionName);
+            ps.setInt(4,totalCapacity);
+            ps.setInt(5,totalCapacity);//新插入 剩余名额为满的
+            ps.executeUpdate();
+            ResultSet rs= ps.getGeneratedKeys();
+            return rs.getInt(1);
+        }catch (SQLException throwables) {
+            throwables.printStackTrace();
+            throw new IntegrityViolationException();
+        }
     }
 
     @Override
@@ -91,22 +107,126 @@ public class MyCourseService implements CourseService {
 
     @Override
     public void removeCourse(String courseId) {
+        try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
+            String sql1="delete from course where id=?";
+            PreparedStatement ps1 = con.prepareStatement(sql1);
+            ps1.setString(1,courseId);
+            ps1.executeUpdate();
+            String sql4="delete from major_course where course_id=?";
+            PreparedStatement ps4 = con.prepareStatement(sql4);
+            ps4.setString(1,courseId);
+            ps4.executeUpdate();
 
+            String sql2="delete from section where course_id=?";
+            PreparedStatement ps2 = con.prepareStatement(sql2,PreparedStatement.RETURN_GENERATED_KEYS);
+            ps2.setString(1,courseId);
+            ps2.executeUpdate();
+            ResultSet rs=ps2.getGeneratedKeys();
+            int sectionId=rs.getInt(1);
+            String sql5="delete from student_section where section_id=?";
+            PreparedStatement ps5 = con.prepareStatement(sql5);
+            ps5.setInt(1,sectionId);
+            ps5.executeUpdate();
+            String sql6="delete from semester where id=?";
+            PreparedStatement ps6 = con.prepareStatement(sql6);
+            ps6.setInt(1,sectionId);
+            ps6.executeUpdate();
+
+
+            String sql3="delete from section_class where section_id=?";
+            PreparedStatement ps3 = con.prepareStatement(sql3,PreparedStatement.RETURN_GENERATED_KEYS);
+            ps3.setInt(1,sectionId);
+            ps3.executeUpdate();
+            ResultSet rs2=ps3.getGeneratedKeys();
+            int section_class_id=rs2.getInt(1);
+            String sql7="delete from instructor where id=?";
+            PreparedStatement ps7 = con.prepareStatement(sql7);
+            ps7.setInt(1,section_class_id);
+            ps7.executeUpdate();
+
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+            throw new EntityNotFoundException();
+        }
     }
 
     @Override
     public void removeCourseSection(int sectionId) {
+        try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
 
+            String sql2="delete from section where id=?";
+            PreparedStatement ps2 = con.prepareStatement(sql2);
+            ps2.setInt(1,sectionId);
+            ps2.executeUpdate();
+            String sql5="delete from student_section where section_id=?";
+            PreparedStatement ps5 = con.prepareStatement(sql5);
+            ps5.setInt(1,sectionId);
+            ps5.executeUpdate();
+            String sql6="delete from semester where id=?";
+            PreparedStatement ps6 = con.prepareStatement(sql6);
+            ps6.setInt(1,sectionId);
+            ps6.executeUpdate();
+
+            String sql3="delete from section_class where section_id=?";
+            PreparedStatement ps3 = con.prepareStatement(sql3,PreparedStatement.RETURN_GENERATED_KEYS);
+            ps3.setInt(1,sectionId);
+            ps3.executeUpdate();
+            ResultSet rs2=ps3.getGeneratedKeys();
+            int section_class_id=rs2.getInt(1);
+            String sql7="delete from instructor where id=?";
+            PreparedStatement ps7 = con.prepareStatement(sql7);
+            ps7.setInt(1,section_class_id);
+            ps7.executeUpdate();
+
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+            throw new EntityNotFoundException();
+        }
     }
 
     @Override
     public void removeCourseSectionClass(int classId) {
-
+        try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
+            String sql3="delete from section_class where id=?";
+            PreparedStatement ps3 = con.prepareStatement(sql3);
+            ps3.setInt(1,classId);
+            ps3.executeUpdate();
+            String sql7="delete from instructor where id=?";
+            PreparedStatement ps7 = con.prepareStatement(sql7);
+            ps7.setInt(1,classId);
+            ps7.executeUpdate();
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+            throw new EntityNotFoundException();
+        }
     }
 
     @Override
     public List<Course> getAllCourses() {
-        return null;
+        ArrayList<Course> result = new ArrayList<>();
+        try (Connection con=SQLDataSource.getInstance().getSQLConnection()){
+            String sql="select * from course;";
+            PreparedStatement ps = con.prepareStatement(sql);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()){
+                String id=rs.getString(1);
+                String name=rs.getString(2);
+                int credit=rs.getInt(3);
+                int classHour=rs.getInt(4);
+                boolean is_pf=rs.getBoolean(5);
+                Course.CourseGrading grading;
+                if(is_pf){
+                    grading= Course.CourseGrading.PASS_OR_FAIL;
+                }else {
+                    grading= Course.CourseGrading.HUNDRED_MARK_SCORE;
+                }
+                String prerequisite=rs.getString(6);
+                result.add(new Course(id,name,credit,classHour,grading,prerequisite));
+            }
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+        return result;
     }
 
     @Override

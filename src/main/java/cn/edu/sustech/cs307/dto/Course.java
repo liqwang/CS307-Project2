@@ -3,6 +3,9 @@ package cn.edu.sustech.cs307.dto;
 import java.util.Objects;
 
 public class Course {
+    public enum CourseGrading {
+        PASS_OR_FAIL, HUNDRED_MARK_SCORE
+    }
 
     public Course(String id, String name, int credit, int classHour, CourseGrading grading, String prerequisite) {
         this.id = id;
@@ -11,10 +14,6 @@ public class Course {
         this.classHour = classHour;
         this.grading = grading;
         this.prerequisite = prerequisite;
-    }
-
-    public enum CourseGrading {
-        PASS_OR_FAIL, HUNDRED_MARK_SCORE
     }
 
     // A courseId is valid if it has been added to the system with addCourse()
@@ -28,9 +27,7 @@ public class Course {
     public int classHour;
 
     public CourseGrading grading;
-//    /**
-//     * 额外属性：一个课程应该有开课院系
-//     */
+
     public String prerequisite;
 
     @Override
