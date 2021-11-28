@@ -1,3 +1,15 @@
+create table if not exists course
+(
+    id           varchar(20) not null
+        constraint course_pk
+            primary key,
+    name         varchar(50) not null,
+    credit       integer,
+    class_hour   integer,
+    is_pf        boolean,
+    prerequisite varchar(100)
+);
+
 create table if not exists semester
 (
     id         serial
@@ -6,38 +18,6 @@ create table if not exists semester
     name       varchar(20) not null,
     begin_time date        not null,
     end_time   date        not null
-);
-
-create table if not exists instructor
-(
-    id         serial
-        constraint instructor_pk
-            primary key,
-    first_name varchar(30) not null,
-    last_name  varchar(50) not null
-);
-
-create table if not exists department
-(
-    id   serial
-        constraint department_pk
-            primary key,
-    name varchar(30) not null
-);
-
-create table if not exists course
-(
-    id            varchar(20) not null
-        constraint course_pk
-            primary key,
-    name          varchar(50) not null,
-    credit        integer,
-    class_hour    integer,
-    is_pf         boolean,
-    department_id integer     not null
-        constraint fk_department
-            references department,
-    prerequisite  varchar(100)
 );
 
 create table if not exists section
@@ -56,6 +36,15 @@ create table if not exists section
     left_capacity  integer
 );
 
+create table if not exists instructor
+(
+    id         serial
+        constraint instructor_pk
+            primary key,
+    first_name varchar(30) not null,
+    last_name  varchar(50) not null
+);
+
 create table if not exists section_class
 (
     id            integer default nextval('course_section_class_id_seq'::regclass) not null
@@ -72,6 +61,14 @@ create table if not exists section_class
     class_begin   integer,
     class_end     integer,
     location      varchar(30)
+);
+
+create table if not exists department
+(
+    id   serial
+        constraint department_pk
+            primary key,
+    name varchar(30) not null
 );
 
 create unique index if not exists department_name_uindex

@@ -18,10 +18,6 @@ public class Course {
     public int classHour;
 
     public CourseGrading grading;
-    /**
-     * 额外属性：一个课程应该有开课院系
-     */
-    public Department department;
 
     public String prerequisite;
 
