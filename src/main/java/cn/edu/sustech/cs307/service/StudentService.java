@@ -15,7 +15,6 @@ public interface StudentService {
     /**
      * 学生选课结果<p>
      * The priority of EnrollResult should be (if not SUCCESS):<p>
-     * ALREADY_ENROLLED和ALREADY_PASSED应该是并列的?<p>
      * COURSE_NOT_FOUND > ALREADY_ENROLLED > ALREADY_PASSED > PREREQUISITES_NOT_FULFILLED > COURSE_CONFLICT_FOUND > COURSE_IS_FULL > UNKNOWN_ERROR
      */
     enum EnrollResult {

@@ -1,21 +1,16 @@
 package implement.services;
 
 import cn.edu.sustech.cs307.database.SQLDataSource;
-import cn.edu.sustech.cs307.dto.Course;
-import cn.edu.sustech.cs307.dto.CourseSearchEntry;
-import cn.edu.sustech.cs307.dto.CourseTable;
-import cn.edu.sustech.cs307.dto.Major;
+import cn.edu.sustech.cs307.dto.*;
 import cn.edu.sustech.cs307.dto.grade.Grade;
 import cn.edu.sustech.cs307.service.StudentService;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.sql.*;
+import java.sql.Date;
 import java.time.DayOfWeek;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Stack;
+import java.util.*;
 
 @ParametersAreNonnullByDefault
 public class MyStudentService implements StudentService {
@@ -31,6 +26,7 @@ public class MyStudentService implements StudentService {
 
     @Override
     public EnrollResult enrollCourse(int studentId, int sectionId) {
+        //2&3&5.1这三种情况要区分开
         try(Connection con= SQLDataSource.getInstance().getSQLConnection()) {
             //1.班级不存在
             String sql1 = "select total_capacity,left_capacity from section where id=?";
@@ -38,21 +34,34 @@ public class MyStudentService implements StudentService {
             ps.setInt(1, sectionId);
             ResultSet capacity=ps.executeQuery();
             if(!capacity.next()){return EnrollResult.COURSE_NOT_FOUND;}
-            //2.已经选了这个班级 & 3.已经通过了这门课
+            //2.已经选了这个班级
             String sql2="select is_passed from student_section where section_id=? and student_id=?";
             ps = con.prepareStatement(sql2);
             ps.setInt(1,sectionId);
             ps.setInt(2,studentId);
-            ResultSet rs=ps.executeQuery();
-            if(rs.next()){
-                if(!rs.getBoolean(4)){return EnrollResult.ALREADY_ENROLLED;}
-                else {return EnrollResult.ALREADY_PASSED;}
-            }
+            //新选的课，mark=null, is_passed=null
+            //之前学期的课，mark不为null, is_passed为true或false
+            if(ps.executeQuery().next()){return EnrollResult.ALREADY_ENROLLED;}
+            //3.已经通过了这门课
+            String sql3="select course_id\n" +
+                        "from section join student_section\n" +
+                        "     on id=section_id\n" +
+                        "     and student_id=?       \n" +
+                        "     and is_passed=true       \n" +
+                        "     and course_id = (\n" +
+                        "         select course_id\n" +
+                        "         from section\n" +
+                        "         where id=?\n" +
+                        "     )";//找出之前通过的这门课的courseId，如果不为空，则已通过
+            ps=con.prepareStatement(sql3);
+            ps.setInt(1,studentId);
+            ps.setInt(2,sectionId);
+            if(ps.executeQuery().next()){return EnrollResult.ALREADY_PASSED;}
             //4.先修课不满足
-            String sql3="select course_id from section where id=?";
-            ps = con.prepareStatement(sql3);
+            String sql4="select course_id from section where id=?";
+            ps = con.prepareStatement(sql4);
             ps.setInt(1,sectionId);
-            rs = ps.executeQuery();
+            ResultSet rs = ps.executeQuery();
             String courseId=rs.getString(2);
             //这里虽然复用了方法，但是方法中新创建了一个Connection，降低了效率
             if(!passedPrerequisitesForCourse(studentId,courseId)){
@@ -60,27 +69,129 @@ public class MyStudentService implements StudentService {
             }
             //5.冲突
             //5.1课程冲突(已经选了这门课)
-            String sql4="";
-            ps = con.prepareStatement(sql4);
+            String sql5="select course_id\n" +
+                        "from section join student_section\n" +
+                        "     on id=section_id\n" +
+                        "     and student_id=?\n" +
+                        "     and mark is null\n" +
+                        "     and course_id= (\n" +
+                        "         select course_id\n" +
+                        "         from section\n" +
+                        "         where id=?\n" +
+                        "     )";//本学期所选的这门课的courseId，如果不为空，则已选过这门课
+            ps = con.prepareStatement(sql5);
+            if(ps.executeQuery().next()){return EnrollResult.COURSE_CONFLICT_FOUND;}
             //5.2时间冲突
+            //5.2.1获取该学生本学期的所有class中和该sectionId在同一DayOfWeek的classes: sameDayClasses
+            String sql6="select day_of_week,class_begin,class_end,week_list\n" +
+                        "from student_section\n" +
+                        "     join section on section_id=section.id\n" +
+                        "                  and student_id=?\n" +
+                        "                  and semester_id=(\n" +
+                        "                          select semester_id\n" +
+                        "                          from section\n" +
+                        "                          where id=?\n" +
+                        "                      )\n" +
+                        "     join section_class on section_class.section_id=section.id\n" +
+                        "                        and day_of_week in(\n" +
+                        "                                select day_of_week\n" +
+                        "                                from section_class\n" +
+                        "                                where section_id=?\n" +
+                        "                            )";
+            ps=con.prepareStatement(sql6);
+            ps.setInt(1,studentId);
+            ps.setInt(2,sectionId);
+            ps.setInt(3,sectionId);
+            rs = ps.executeQuery();
+            List<CourseSectionClass> sameDayClasses = getClassList(rs);
+            //5.2.2获取该sectionId的sectionClass: selectClasses
+            String sql7="select day_of_week,class_begin,class_end,week_list\n" +
+                        "from section_class\n" +
+                        "where section_id=?;";
+            ps=con.prepareStatement(sql7);
+            ps.setInt(1,sectionId);
+            rs=ps.executeQuery();
+            ArrayList<CourseSectionClass> selectClasses = getClassList(rs);
+            //5.2.3比较selectClasses和sameDayClasses,判断时间是否冲突
+            for (CourseSectionClass selectClass : selectClasses) {
+
+            }
             //6.班级满了
             if(capacity.getInt(5)==capacity.getInt(6)){
                 return EnrollResult.COURSE_IS_FULL;
             }
-            //同时要修改表section中的left_capacity
+            //7.选课成功
+            //7.1添加一条student_section关系
+            String sql8="insert into student_section values (?,?,null,null)";
+            ps=con.prepareStatement(sql8);
+            ps.setInt(1,studentId);
+            ps.setInt(2,sectionId);
+            ps.executeUpdate();
+            //7.2表section中的left_capacity++
+            updateLeftCapacity(con,sectionId,true);
+            ps.close();
+            return EnrollResult.SUCCESS;
         } catch (SQLException e) {
             e.printStackTrace();
+            //8.未知错误
+            return EnrollResult.UNKNOWN_ERROR;
         }
+    }
+    /**
+     * 步骤5.2内部的辅助方法
+     */
+    private ArrayList<CourseSectionClass> getClassList(ResultSet rs) throws SQLException {
+        ArrayList<CourseSectionClass> res = new ArrayList<>();
+        while(rs.next()){
+            DayOfWeek dayOfWeek=DayOfWeek.of(rs.getInt(4));
+            short classBegin = rs.getShort(5);
+            short classEnd = rs.getShort(6);
+            Array array = rs.getArray(8);
+            HashSet<Short> weekList = new HashSet<>();
+            for (Object o : (Object[]) array.getArray()) {
+                if(o instanceof Number){
+                    weekList.add((short)o);
+                }
+            }
+            res.add(new CourseSectionClass(
+            0,null,dayOfWeek,weekList,null,classBegin,classEnd,null));
+        }
+        return res;
     }
 
     @Override
     public void dropCourse(int studentId, int sectionId) throws IllegalStateException {
-        //同时要修改表section中的left_capacity
+        //同时要修改表section中的left_capacity,调用updateLeftCapacity()
     }
 
     @Override
     public void addEnrolledCourseWithGrade(int studentId, int sectionId, @Nullable Grade grade) {
-        //同时要修改表section中的left_capacity
+        //同时要修改表section中的left_capacity,调用updateLeftCapacity()
+    }
+    private void updateLeftCapacity(Connection con,int sectionId,boolean isAdd) throws SQLException{
+        //isAdd为true: left_capacity++
+        //isAdd为false: left_capacity--
+        String addSql="update section\n" +
+                      "set left_capacity=(\n" +
+                      "        select left_capacity\n" +
+                      "        from section\n" +
+                      "        where id=?\n" +
+                      "    )+1\n" +
+                      "where id=?";
+        String dropSql="update section\n" +
+                       "set left_capacity=(\n" +
+                       "        select left_capacity\n" +
+                       "        from section\n" +
+                       "        where id=?\n" +
+                       "    )-1\n" +
+                       "where id=?";
+        PreparedStatement ps;
+        if(isAdd){ps=con.prepareStatement(addSql);}
+        else{ps=con.prepareStatement(dropSql);}
+        ps.setInt(1,sectionId);
+        ps.setInt(2,sectionId);
+        ps.executeUpdate();
+        ps.close();
     }
 
     @Override

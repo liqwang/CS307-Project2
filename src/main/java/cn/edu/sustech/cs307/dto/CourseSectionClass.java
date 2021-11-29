@@ -22,6 +22,17 @@ public class CourseSectionClass {
     public short classBegin, classEnd;
     public String location;
 
+    public CourseSectionClass(int id, Instructor instructor, DayOfWeek dayOfWeek, Set<Short> weekList, CourseSection section, short classBegin, short classEnd, String location) {
+        this.id = id;
+        this.instructor = instructor;
+        this.dayOfWeek = dayOfWeek;
+        this.weekList = weekList;
+        this.section = section;
+        this.classBegin = classBegin;
+        this.classEnd = classEnd;
+        this.location = location;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {

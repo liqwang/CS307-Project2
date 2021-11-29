@@ -57,10 +57,10 @@ create table if not exists section_class
         constraint fk_instructor
             references instructor,
     day_of_week   integer,
-    class_begin   integer,
-    class_end     integer,
+    class_begin   smallint,
+    class_end     smallint,
     location      varchar(30),
-    week_list     integer[]
+    week_list     smallint[]
 );
 
 create table if not exists department
@@ -120,6 +120,7 @@ create table if not exists student_section
         constraint fk_section
             references section,
     mark       integer,
+    is_passed  boolean,
     constraint pk_student_section
         primary key (student_id, section_id)
 );
