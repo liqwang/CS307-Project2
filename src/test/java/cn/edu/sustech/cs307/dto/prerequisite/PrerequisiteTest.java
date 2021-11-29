@@ -39,5 +39,7 @@ public class PrerequisiteTest {
             }
         });
         assertEquals("((MA101A OR MA101B) AND MA103A)", expression);
+        // ((MA101A MA101B) MA103A)
+        //   MA101A MA101B  MA103A
     }
 }

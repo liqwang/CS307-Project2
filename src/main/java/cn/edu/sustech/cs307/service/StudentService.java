@@ -15,6 +15,7 @@ public interface StudentService {
     /**
      * 学生选课结果<p>
      * The priority of EnrollResult should be (if not SUCCESS):<p>
+     * ALREADY_ENROLLED和ALREADY_PASSED应该是并列的?<p>
      * COURSE_NOT_FOUND > ALREADY_ENROLLED > ALREADY_PASSED > PREREQUISITES_NOT_FULFILLED > COURSE_CONFLICT_FOUND > COURSE_IS_FULL > UNKNOWN_ERROR
      */
     enum EnrollResult {
@@ -123,7 +124,7 @@ public interface StudentService {
                                          int pageSize, int pageIndex);
 
     /**
-     * It is the course selection function according to the studentId and courseId.
+     * It is the course selection function according to the studentId and sectionId.
      * The test case can be invalid data or conflict info, so that it can return 8 different
      * types of enroll results.
      *
