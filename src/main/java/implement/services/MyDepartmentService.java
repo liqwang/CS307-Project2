@@ -38,6 +38,7 @@ public class MyDepartmentService implements DepartmentService {
             PreparedStatement ps = con.prepareStatement(sql);
             ps.setInt(1,departmentId);
             ps.executeUpdate();
+            ps.close();
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         }
@@ -55,6 +56,7 @@ public class MyDepartmentService implements DepartmentService {
                 String name = rs.getString(2);
                 departments.add(new Department(id, name));
             }
+            ps.close();
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         }
@@ -70,6 +72,7 @@ public class MyDepartmentService implements DepartmentService {
             ResultSet rs = ps.executeQuery();
             int id=rs.getInt(1);
             String name=rs.getString(2);
+            ps.close();
             return new Department(id,name);
         } catch (SQLException throwables) {
             throwables.printStackTrace();
