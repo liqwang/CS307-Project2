@@ -112,9 +112,21 @@ public class MyStudentService implements StudentService {
             ps.setInt(1,sectionId);
             rs=ps.executeQuery();
             ArrayList<CourseSectionClass> selectClasses = getClassList(rs);
-            //5.2.3比较selectClasses和sameDayClasses,判断时间是否冲突
+            //5.2.3比较selectClasses和sameDayClasses,判断时间是否冲突(类似哈希思想)
             for (CourseSectionClass selectClass : selectClasses) {
-
+                for (CourseSectionClass sameDayClass : sameDayClasses) {
+                    //5.2.3.1先寻找“相同DayOfWeek && 课程时间冲突”的情况
+                    if(selectClass.dayOfWeek==sameDayClass.dayOfWeek
+                    && selectClass.classBegin>=sameDayClass.classEnd
+                    && sameDayClass.classBegin>=selectClass.classEnd){
+                        //5.2.3.2再判断weekList是否冲突
+                        for (Short week : selectClass.weekList) {
+                            if(sameDayClass.weekList.contains(week)){
+                                return EnrollResult.COURSE_CONFLICT_FOUND;
+                            }
+                        }
+                    }
+                }
             }
             //6.班级满了
             if(capacity.getInt(5)==capacity.getInt(6)){
