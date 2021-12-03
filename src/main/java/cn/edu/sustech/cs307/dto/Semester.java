@@ -19,10 +19,10 @@ public class Semester {
      */
     public Date begin, end;
 
-    public Semester(int id, String name, Date begin, Date end) throws SQLException{ //可能有bug（关于丢出错误）
+    public Semester(int id, String name, Date begin, Date end) { //可能有bug（关于丢出错误）
         this.id = id;
         this.name = name;
-        if(begin.after(end)) throw new SQLException("illegal Argument Error");
+        if(begin.after(end)) throw new IllegalAccessError(); //如果开始时间在结束时间之后，丢出数据非法错误
         else{
             this.begin = begin;
             this.end = end;
