@@ -65,7 +65,7 @@ public class MySemesterService implements SemesterService {
     }
 
     @Override
-    public Semester getSemester(int semesterId) {
+    public Semester getSemester(int semesterId) { //可能有bug（关于丢出错误）
         try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
             String sql="select * from semester where id = ?";
             PreparedStatement ps = con.prepareStatement(sql);

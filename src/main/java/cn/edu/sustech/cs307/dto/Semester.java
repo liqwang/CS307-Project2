@@ -19,7 +19,7 @@ public class Semester {
      */
     public Date begin, end;
 
-    public Semester(int id, String name, Date begin, Date end) throws SQLException{
+    public Semester(int id, String name, Date begin, Date end) throws SQLException{ //可能有bug（关于丢出错误）
         this.id = id;
         this.name = name;
         if(begin.after(end)) throw new SQLException("illegal Argument Error");
