@@ -20,7 +20,7 @@ public class MySemesterService implements SemesterService {
     public int addSemester(String name, Date begin, Date end) {
         try(Connection con = SQLDataSource.getInstance().getSQLConnection()){
             String sql="insert into semester(name, begin_time, end_time) values (?,?,?)";
-            PreparedStatement ps = con.prepareStatement(sql);
+            PreparedStatement ps = con.prepareStatement(sql,PreparedStatement.RETURN_GENERATED_KEYS);
                 ps.setString(1, name);
                 ps.setDate(2, begin);
                 ps.setDate(3, end);
