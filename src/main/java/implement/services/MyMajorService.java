@@ -1,8 +1,10 @@
 package implement.services;
 
 import cn.edu.sustech.cs307.database.SQLDataSource;
+import cn.edu.sustech.cs307.dto.Department;
 import cn.edu.sustech.cs307.dto.Major;
 import cn.edu.sustech.cs307.dto.Student;
+import cn.edu.sustech.cs307.exception.EntityNotFoundException;
 import cn.edu.sustech.cs307.exception.IntegrityViolationException;
 import cn.edu.sustech.cs307.service.MajorService;
 
@@ -11,6 +13,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 @ParametersAreNonnullByDefault
@@ -60,17 +63,67 @@ public class MyMajorService implements MajorService {
 
     @Override
     public List<Major> getAllMajors() {
-        return null;
+        ArrayList<Major> majors = new ArrayList<>();
+        Department department;
+        try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
+            String sql="select * from major";
+            PreparedStatement ps = con.prepareStatement(sql);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()){
+                int id = rs.getInt(1);
+                String name = rs.getString(2);
+                int d_id = rs.getInt(3);
+                // 通过院系id，构造一整个院系
+                // 这里有一个小疑惑，为什么department内部的get department方法不能直接调用，他有什么存在的意义吗
+                // 我想这样用->department = getDepartment(d_id);
+                String sql_d = "select * from department where id=?";
+                PreparedStatement ps_d = con.prepareStatement(sql_d);
+                ResultSet rs_d = ps.executeQuery();
+                String name_d = rs_d.getString(2);
+                department = new Department(d_id, name_d);
+                ps_d.close();
+                majors.add(new Major(id, name, department));
+            }
+            ps.close();
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+        return majors;
     }
 
     @Override
     public Major getMajor(int majorId) {
-        return null;
+        try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
+            String sql="select * from major where id=?";
+            PreparedStatement ps = con.prepareStatement(sql);
+            ps.setInt(1,majorId);
+            ResultSet rs = ps.executeQuery();
+            int id=rs.getInt(1);
+            String name=rs.getString(2);
+            int department_id = rs.getInt(3);
+            ps.close();
+            // 获取院系
+            Department department;
+            String sql_d = "select * from department where id=?";
+            PreparedStatement ps_d = con.prepareStatement(sql_d);
+            ResultSet rs_d = ps.executeQuery();
+            if(!rs_d.next())
+                throw new EntityNotFoundException();
+            String name_d = rs_d.getString(2);
+            department = new Department(department_id, name_d);
+            ps_d.close();
+            return new Major(id, name, department);
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+            throw new EntityNotFoundException();
+        }
     }
 
     @Override
-    public void addMajorCompulsoryCourse(int majorId, String courseId) {
-
+    public void addMajorCompulsoryCourse(int majorId, String courseId) { //这两个没看懂
+        try(Connection con = SQLDataSource.getInstance().getSQLConnection()){
+        }catch (SQLException throwables) {
+        }
     }
 
     @Override
