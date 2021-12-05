@@ -248,7 +248,7 @@ public class MyCourseService implements CourseService {
     public Course getCourseBySection(int sectionId) {
         try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
             String sql="select distinct c.id,c.name,c.credit,c.is_pf,c.prerequisite\n" +
-                    "from course c left join section s on c.id = s.course_id\n" +
+                    "from course c join section s on c.id = s.course_id\n" +
                     "where s.id=?";
             PreparedStatement ps = con.prepareStatement(sql);
             ps.setInt(1,sectionId);
@@ -272,8 +272,8 @@ public class MyCourseService implements CourseService {
         ArrayList<CourseSectionClass> cs=new ArrayList<>();
         try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
             String sql="select * from section_class\n" +
-                    "left join instructor i on section_class.instructor_id = i.id\n" +
-                    "left join section s on section_class.section_id = s.id\n" +
+                    "join instructor i on section_class.instructor_id = i.id\n" +
+                    "join section s on section_class.section_id = s.id\n" +
                     "where section_id=?;";
             PreparedStatement ps = con.prepareStatement(sql);
             ps.setInt(1,sectionId);
@@ -305,7 +305,7 @@ public class MyCourseService implements CourseService {
     public CourseSection getCourseSectionByClass(int classId) {
         try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
             String sql="select distinct section.id,course_id,semester_id,name,total_capacity,left_capacity\n" +
-                    "from section left join public.section_class sc on section.id = sc.section_id\n" +
+                    "from section join public.section_class sc on section.id = sc.section_id\n" +
                     "where sc.id=?;";
             PreparedStatement ps = con.prepareStatement(sql);
             ps.setInt(1,classId);
@@ -320,6 +320,30 @@ public class MyCourseService implements CourseService {
 
     @Override
     public List<Student> getEnrolledStudentsInSemester(String courseId, int semesterId) {
-        return null;
+        ArrayList<Student> cs=new ArrayList<>();
+        try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
+            String sql="select * from\n" +
+                    "(select *\n" +
+                    "from (select s.id\n" +
+                    "from course c join section s on c.id = s.course_id\n" +
+                    "join public.semester s2 on s2.id = s.semester_id \n" +
+                    "where c.id=? and s2.id=?) le join student_section on section_id=le.id) mid\n" +
+                    "join student stu on mid.student_id=stu.id join major m on stu.major_id = m.id\n" +
+                    "join department d on d.id = m.department_id;\n";
+            PreparedStatement ps = con.prepareStatement(sql);
+            ps.setString(1,courseId);
+            ps.setInt(2,semesterId);
+            ResultSet rs = ps.executeQuery();
+            ps.close();
+            Department dp=new Department(rs.getInt(7),rs.getString(8));
+            Major major=new Major(rs.getInt(2),rs.getString(6),dp);
+            while (rs.next()){
+                cs.add(new Student(rs.getInt(1),rs.getString(2),rs.getString(3),rs.getDate(5),major));
+            }
+            return cs;
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+            throw new EntityNotFoundException();
+        }
     }
 }

@@ -20,6 +20,13 @@ public class Student extends User {
         this.major = major;
     }
 
+    public Student(int id,Major major,String name,Date enrolledDate ) {
+        this.enrolledDate = enrolledDate;
+        this.major = major;
+        this.id=id;
+        this.fullName=name;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
