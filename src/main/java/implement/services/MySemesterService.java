@@ -1,10 +1,7 @@
 package implement.services;
 
 import cn.edu.sustech.cs307.database.SQLDataSource;
-import cn.edu.sustech.cs307.dto.Department;
 import cn.edu.sustech.cs307.dto.Semester;
-import cn.edu.sustech.cs307.dto.prerequisite.AndPrerequisite;
-import cn.edu.sustech.cs307.dto.prerequisite.Prerequisite;
 import cn.edu.sustech.cs307.exception.EntityNotFoundException;
 import cn.edu.sustech.cs307.exception.IntegrityViolationException;
 import cn.edu.sustech.cs307.service.SemesterService;

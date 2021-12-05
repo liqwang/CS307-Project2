@@ -14,6 +14,16 @@ import java.util.*;
 
 @ParametersAreNonnullByDefault
 public class MyStudentService implements StudentService {
+    Connection con;
+
+    {
+        try {
+            con = SQLDataSource.getInstance().getSQLConnection();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
     @Override
     public void addStudent(int userId, int majorId, String firstName, String lastName, Date enrolledDate) {
 
@@ -63,7 +73,6 @@ public class MyStudentService implements StudentService {
             ps.setInt(1,sectionId);
             ResultSet rs = ps.executeQuery();
             String courseId=rs.getString(2);
-            //这里虽然复用了方法，但是方法中新创建了一个Connection，降低了效率
             if(!passedPrerequisitesForCourse(studentId,courseId)){
                 return EnrollResult.PREREQUISITES_NOT_FULFILLED;
             }
@@ -178,7 +187,7 @@ public class MyStudentService implements StudentService {
 
     @Override
     public void addEnrolledCourseWithGrade(int studentId, int sectionId, @Nullable Grade grade) {
-        //同时要修改表section中的left_capacity,调用updateLeftCapacity()
+        //不要修改left_capacity
     }
     private void updateLeftCapacity(Connection con,int sectionId,boolean isAdd) throws SQLException{
         //isAdd为true: left_capacity++

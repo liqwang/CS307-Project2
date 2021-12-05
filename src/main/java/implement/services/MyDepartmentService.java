@@ -3,8 +3,8 @@ package implement.services;
 import cn.edu.sustech.cs307.database.SQLDataSource;
 import cn.edu.sustech.cs307.dto.Department;
 import cn.edu.sustech.cs307.exception.EntityNotFoundException;
-import cn.edu.sustech.cs307.exception.IntegrityViolationException;
 import cn.edu.sustech.cs307.service.DepartmentService;
+import implement.Util;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.sql.Connection;
@@ -16,31 +16,29 @@ import java.util.List;
 
 @ParametersAreNonnullByDefault
 public class MyDepartmentService implements DepartmentService {
-
-    @Override
-    public int addDepartment(String name) {
-        try(Connection con= SQLDataSource.getInstance().getSQLConnection()) {
-            String sql="insert into department (name) values (?)";
-            PreparedStatement ps=con.prepareStatement(sql,PreparedStatement.RETURN_GENERATED_KEYS);
-            ps.setString(1,name);
-            ps.executeUpdate();
-            return ps.getGeneratedKeys().getInt(1);
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-            throw new IntegrityViolationException();
+    Connection con;
+    {
+        try {
+            con = SQLDataSource.getInstance().getSQLConnection();
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 
     @Override
+    public int addDepartment(String name) {
+        String sql="insert into department (name) values (?)";
+        return Util.addAndGetKey(con,sql,name);
+    }
+
+    @Override
     public void removeDepartment(int departmentId) {
-        try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
-            String sql="delete from department where id=?";
-            PreparedStatement ps = con.prepareStatement(sql);
-            ps.setInt(1,departmentId);
-            ps.executeUpdate();
-            ps.close();
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
+        String sql="delete from department where id=?";
+        try {
+            Util.update(con,sql,departmentId);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new EntityNotFoundException();
         }
     }
 
@@ -59,6 +57,7 @@ public class MyDepartmentService implements DepartmentService {
             ps.close();
         } catch (SQLException throwables) {
             throwables.printStackTrace();
+            throw new EntityNotFoundException();
         }
         return departments;
     }

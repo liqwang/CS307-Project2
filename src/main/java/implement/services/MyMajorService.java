@@ -1,7 +1,6 @@
 package implement.services;
 
 import cn.edu.sustech.cs307.database.SQLDataSource;
-import cn.edu.sustech.cs307.dto.Course;
 import cn.edu.sustech.cs307.dto.Department;
 import cn.edu.sustech.cs307.dto.Major;
 import cn.edu.sustech.cs307.exception.EntityNotFoundException;
@@ -35,7 +34,7 @@ public class MyMajorService implements MajorService {
         }
     }
 
-    @Override //删三个 student? student_section, amjor_courese
+    @Override //删三个 student? student_section, major_courses
     public void removeMajor(int majorId) {
         try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
             String sql1="delete from major where id=?";

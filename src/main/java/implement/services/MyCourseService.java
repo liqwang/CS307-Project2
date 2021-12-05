@@ -220,6 +220,7 @@ public class MyCourseService implements CourseService {
             }
         } catch (SQLException throwables) {
             throwables.printStackTrace();
+            throw new EntityNotFoundException();
         }
         return result;
     }
