@@ -32,9 +32,15 @@ public class MySemesterService implements SemesterService {
     @Override
     public void removeSemester(int semesterId) {
         try(Connection con = SQLDataSource.getInstance().getSQLConnection()){
-            String sql="delete from department where id = ?";
-            PreparedStatement ps = con.prepareStatement(sql);
-                ps.setInt(1, semesterId);
+            // 先删除相关选课记录，再删除学期
+            String sql1 = "delete from section where semester_id = ?";
+            PreparedStatement ps1 = con.prepareStatement(sql1);
+                ps1.setInt(1, semesterId);
+            ps1.executeUpdate();
+            String sql2 ="delete from department where id = ?";
+            PreparedStatement ps2 = con.prepareStatement(sql2);
+                ps2.setInt(1, semesterId);
+            ps2.executeUpdate();
         }catch(SQLException throwables){
             throwables.printStackTrace();
         }

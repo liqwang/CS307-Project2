@@ -8,6 +8,25 @@ public class Student extends User {
 
     public Major major;
 
+    public Student(int id, String f_name, String l_name, Date enrolledDate, Major major){
+        String name;
+        if(f_name.charAt(0) >= 'A' && f_name.charAt(0) <= 'Z'){
+            name = f_name + " " + l_name;
+        }
+        else name = f_name + l_name;
+        this.id = id;
+        this.fullName = name;
+        this.enrolledDate = enrolledDate;
+        this.major = major;
+    }
+
+    public Student(int id,Major major,String name,Date enrolledDate ) {
+        this.enrolledDate = enrolledDate;
+        this.major = major;
+        this.id=id;
+        this.fullName=name;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
