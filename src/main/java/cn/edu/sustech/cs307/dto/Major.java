@@ -5,7 +5,7 @@ public class Major {
     public String name;
     public Department department;
 
-    public Major(int id, String name, Department department){
+    public Major(int id, String name, Department department) {
         this.id = id;
         this.name = name;
         this.department = department;

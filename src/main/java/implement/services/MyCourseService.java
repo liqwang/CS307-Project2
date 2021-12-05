@@ -1,10 +1,7 @@
 package implement.services;
 
 import cn.edu.sustech.cs307.database.SQLDataSource;
-import cn.edu.sustech.cs307.dto.Course;
-import cn.edu.sustech.cs307.dto.CourseSection;
-import cn.edu.sustech.cs307.dto.CourseSectionClass;
-import cn.edu.sustech.cs307.dto.Student;
+import cn.edu.sustech.cs307.dto.*;
 import cn.edu.sustech.cs307.dto.prerequisite.AndPrerequisite;
 import cn.edu.sustech.cs307.dto.prerequisite.CoursePrerequisite;
 import cn.edu.sustech.cs307.dto.prerequisite.OrPrerequisite;
@@ -17,9 +14,7 @@ import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.sql.*;
 import java.time.DayOfWeek;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @ParametersAreNonnullByDefault
 public class MyCourseService implements CourseService {
@@ -231,22 +226,96 @@ public class MyCourseService implements CourseService {
 
     @Override
     public List<CourseSection> getCourseSectionsInSemester(String courseId, int semesterId) {
-        return null;
+        ArrayList<CourseSection> cs=new ArrayList<>();
+        try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
+            String sql="select * from section where course_id=? and semester_id=?";
+            PreparedStatement ps = con.prepareStatement(sql);
+            ps.setString(1,courseId);
+            ps.setInt(2,semesterId);
+            ResultSet rs = ps.executeQuery();
+            while(rs.next()){
+                cs.add(new CourseSection(rs.getInt(1),courseId,semesterId,rs.getString(4),rs.getInt(5),rs.getInt(6)));
+            }
+            ps.close();
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+            throw new EntityNotFoundException();
+        }
+        return cs;
     }
 
     @Override
     public Course getCourseBySection(int sectionId) {
-        return null;
+        try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
+            String sql="select distinct c.id,c.name,c.credit,c.is_pf,c.prerequisite\n" +
+                    "from course c left join section s on c.id = s.course_id\n" +
+                    "where s.id=?";
+            PreparedStatement ps = con.prepareStatement(sql);
+            ps.setInt(1,sectionId);
+            ResultSet rs = ps.executeQuery();
+            Course.CourseGrading grading;
+            if(rs.getBoolean(5)){
+                grading= Course.CourseGrading.PASS_OR_FAIL;
+            }else {
+                grading= Course.CourseGrading.HUNDRED_MARK_SCORE;
+            }
+            ps.close();
+            return new Course(rs.getString(1),rs.getString(2),rs.getInt(3),rs.getInt(4),grading,rs.getString(6));
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+            throw new EntityNotFoundException();
+        }
     }
 
     @Override
     public List<CourseSectionClass> getCourseSectionClasses(int sectionId) {
-        return null;
+        ArrayList<CourseSectionClass> cs=new ArrayList<>();
+        try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
+            String sql="select * from section_class\n" +
+                    "left join instructor i on section_class.instructor_id = i.id\n" +
+                    "left join section s on section_class.section_id = s.id\n" +
+                    "where section_id=?;";
+            PreparedStatement ps = con.prepareStatement(sql);
+            ps.setInt(1,sectionId);
+            ResultSet rs = ps.executeQuery();
+            int id=rs.getInt(1);
+            String fullName=rs.getString(9)+" "+rs.getString(10);
+            Instructor instructor=new Instructor(id,fullName);
+            DayOfWeek dayOfWeek=DayOfWeek.of(rs.getInt(4));
+            Short[] arr= (Short[]) rs.getArray(8).getArray();
+            Set<Short> weekList=new HashSet<Short>(Arrays.asList(arr));//不确定
+            CourseSection section=new CourseSection(rs.getInt(1),rs.getString(11),rs.getInt(12),
+                    rs.getString(13),rs.getInt(14),rs.getInt(15));
+            short classBegin, classEnd;
+            classBegin=rs.getShort(5);
+            classEnd=rs.getShort(6);
+            String location=rs.getString(7);
+            while(rs.next()){
+                cs.add(new CourseSectionClass(id,instructor,dayOfWeek,weekList,section,classBegin,classEnd,location));
+            }
+            ps.close();
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+            throw new EntityNotFoundException();
+        }
+        return cs;
     }
 
     @Override
     public CourseSection getCourseSectionByClass(int classId) {
-        return null;
+        try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
+            String sql="select distinct section.id,course_id,semester_id,name,total_capacity,left_capacity\n" +
+                    "from section left join public.section_class sc on section.id = sc.section_id\n" +
+                    "where sc.id=?;";
+            PreparedStatement ps = con.prepareStatement(sql);
+            ps.setInt(1,classId);
+            ResultSet rs = ps.executeQuery();
+            ps.close();
+            return new CourseSection(rs.getInt(1),rs.getString(2),rs.getInt(3),rs.getString(4),rs.getInt(5),rs.getInt(6));
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+            throw new EntityNotFoundException();
+        }
     }
 
     @Override
