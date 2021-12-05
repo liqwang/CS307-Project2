@@ -30,6 +30,8 @@ public class CourseSearchEntry {
      * Time conflict is when multiple sections have time-overlapping classes.
      * Note that a section is both course and time conflicting with itself!
      */
+    //1.sorted alphabetically
+    //2.a section is both course and time conflicting with itself!
     public List<String> conflictCourseNames;
 
     @Override

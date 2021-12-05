@@ -4,6 +4,7 @@ import cn.edu.sustech.cs307.database.SQLDataSource;
 import cn.edu.sustech.cs307.dto.*;
 import cn.edu.sustech.cs307.dto.grade.Grade;
 import cn.edu.sustech.cs307.service.StudentService;
+import implement.Util;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -31,7 +32,60 @@ public class MyStudentService implements StudentService {
 
     @Override
     public List<CourseSearchEntry> searchCourse(int studentId, int semesterId, @Nullable String searchCid, @Nullable String searchName, @Nullable String searchInstructor, @Nullable DayOfWeek searchDayOfWeek, @Nullable Short searchClassTime, @Nullable List<String> searchClassLocations, CourseType searchCourseType, boolean ignoreFull, boolean ignoreConflict, boolean ignorePassed, boolean ignoreMissingPrerequisites, int pageSize, int pageIndex) {
-        return null;
+        String sql= "select student_id,\n" +
+                    "       semester_id,\n" +
+                    "       course_id,\n" +
+                    "       c.name||'['||sec.name||']' full_name,\n" +
+                    "       first_name,last_name,\n" +
+                    "       day_of_week,\n" +
+                    "       begin_time,end_time,\n" +
+                    "       location,\n" +
+                    "       is_pf\n" +
+                    "from student_section ss\n" +
+                    "     join section sec on ss.section_id=sec.id\n" +
+                    "                      and student_id=?\n" +
+                    "     join semester sem on sec.semester_id=sem.id\n" +
+                    "                       and semester_id=?\n" +
+                    "     join section_class sc on sec.id = sc.section_id\n" +
+                    "     join instructor i on sc.instructor_id = i.id\n" +
+                    "     join course c on sec.course_id = c.id";
+        ArrayList<Info> infos = Util.query(Info.class, con, sql, studentId, semesterId);
+        if(searchCid!=null){}
+        if(searchName!=null){}
+        if(searchInstructor!=null){}
+        if(searchDayOfWeek!=null){}
+        if(searchClassTime!=null){}
+        if(searchClassLocations!=null){}
+        //CourseType不筛选了，摆
+        if(!ignoreFull){}
+        if(!ignoreConflict){}
+        if(!ignorePassed){}
+        if(!ignoreMissingPrerequisites){}
+    }
+    public class Info{
+        public int studentId,
+                   semesterId;
+        public String courseId,
+                      fullName,
+                      firstName,lastName;
+        public DayOfWeek dayOfWeek;
+        public int beginTime,endTime;
+        public String location;
+        public Course.CourseGrading grading;
+
+        public Info(int studentId, int semesterId, String courseId, String fullName, String firstName, String lastName, DayOfWeek dayOfWeek, int beginTime, int endTime, String location, Course.CourseGrading grading) {
+            this.studentId = studentId;
+            this.semesterId = semesterId;
+            this.courseId = courseId;
+            this.fullName = fullName;
+            this.firstName = firstName;
+            this.lastName = lastName;
+            this.dayOfWeek = dayOfWeek;
+            this.beginTime = beginTime;
+            this.endTime = endTime;
+            this.location = location;
+            this.grading = grading;
+        }
     }
 
     @Override
@@ -313,7 +367,8 @@ public class MyStudentService implements StudentService {
             return stack2.pop();
         } catch (SQLException e) {
             e.printStackTrace();
-            throw new RuntimeException();
+            System.exit(1);
+            return false;
         }
     }
 
