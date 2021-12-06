@@ -3,6 +3,7 @@ package implement.services;
 import cn.edu.sustech.cs307.database.SQLDataSource;
 import cn.edu.sustech.cs307.dto.*;
 import cn.edu.sustech.cs307.dto.grade.Grade;
+import cn.edu.sustech.cs307.exception.IntegrityViolationException;
 import cn.edu.sustech.cs307.service.StudentService;
 
 import javax.annotation.Nullable;
@@ -26,10 +27,22 @@ public class MyStudentService implements StudentService {
 
     @Override
     public void addStudent(int userId, int majorId, String firstName, String lastName, Date enrolledDate) {
-
+        try(Connection con= SQLDataSource.getInstance().getSQLConnection()) {
+            String sql="insert into student (id,major_id,first_name,last_name,enrolled_date) values (?,?,?,?,?)";
+            PreparedStatement ps = con.prepareStatement(sql,PreparedStatement.RETURN_GENERATED_KEYS);
+            ps.setInt(1,userId);
+            ps.setInt(2,majorId);
+            ps.setString(3,firstName);
+            ps.setString(4,lastName);
+            ps.setDate(5,enrolledDate);
+            ps.executeUpdate();
+        }catch (SQLException throwables) {
+            throwables.printStackTrace();
+            throw new IntegrityViolationException();
+        }
     }
 
-    @Override
+    @Override //最后写
     public List<CourseSearchEntry> searchCourse(int studentId, int semesterId, @Nullable String searchCid, @Nullable String searchName, @Nullable String searchInstructor, @Nullable DayOfWeek searchDayOfWeek, @Nullable Short searchClassTime, @Nullable List<String> searchClassLocations, CourseType searchCourseType, boolean ignoreFull, boolean ignoreConflict, boolean ignorePassed, boolean ignoreMissingPrerequisites, int pageSize, int pageIndex) {
         return null;
     }
