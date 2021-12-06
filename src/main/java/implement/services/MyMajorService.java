@@ -36,7 +36,6 @@ public class MyMajorService implements MajorService {
             ps.setInt(2,departmentId);
             ps.executeUpdate();
             ResultSet rs=ps.getGeneratedKeys();
-            ps.close();
             return rs.getInt(1);
         }catch (SQLException throwables) {
             throwables.printStackTrace();

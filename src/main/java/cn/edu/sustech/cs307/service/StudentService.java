@@ -6,7 +6,6 @@ import cn.edu.sustech.cs307.dto.grade.Grade;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.sql.Date;
-import java.sql.SQLException;
 import java.time.DayOfWeek;
 import java.util.List;
 import java.util.Map;
@@ -158,7 +157,7 @@ public interface StudentService {
      * @param sectionId
      * @throws IllegalStateException if the student already has a grade for the course section.
      */
-    void dropCourse(int studentId, int sectionId) throws IllegalStateException, SQLException;
+    void dropCourse(int studentId, int sectionId) throws IllegalStateException;
 
     /**
      * It is used for importing existing data from other sources.
