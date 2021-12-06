@@ -299,20 +299,36 @@ public class MyCourseService implements CourseService {
             PreparedStatement ps = con.prepareStatement(sql);
             ps.setInt(1,sectionId);
             ResultSet rs = ps.executeQuery();
-            int id=rs.getInt(1);
-            String fullName=rs.getString(9)+" "+rs.getString(10);
-            Instructor instructor=new Instructor(id,fullName);
-            DayOfWeek dayOfWeek=DayOfWeek.of(rs.getInt(4));
-            Short[] arr= (Short[]) rs.getArray(8).getArray();
-            Set<Short> weekList=new HashSet<>(Arrays.asList(arr));//不确定
-            CourseSection section=new CourseSection(rs.getInt(1),rs.getString(11),rs.getInt(12),
-                    rs.getString(13),rs.getInt(14),rs.getInt(15));
-            short classBegin, classEnd;
-            classBegin=rs.getShort(5);
-            classEnd=rs.getShort(6);
-            String location=rs.getString(7);
+
             while(rs.next()){
-                cs.add(new CourseSectionClass(id,instructor,dayOfWeek,weekList,section,classBegin,classEnd,location));
+                int id=rs.getInt(1);
+                String fullName=rs.getString(9)+" "+rs.getString(10);
+                Instructor instructor=new Instructor();
+                instructor.id=id;
+                instructor.fullName=fullName;
+                DayOfWeek dayOfWeek=DayOfWeek.of(rs.getInt(4));
+                Short[] arr= (Short[]) rs.getArray(8).getArray();
+                Set<Short> weekList=new HashSet<>(Arrays.asList(arr));//不确定
+                CourseSection section=new CourseSection();
+
+                section.id=rs.getInt(1);
+                section.name=rs.getString(13);
+                section.totalCapacity=rs.getInt(14);
+                section.leftCapacity=rs.getInt(15);
+                short classBegin, classEnd;
+                classBegin=rs.getShort(5);
+                classEnd=rs.getShort(6);
+                String location=rs.getString(7);
+
+                CourseSectionClass courseSectionClass=new CourseSectionClass();
+                courseSectionClass.id=id;
+                courseSectionClass.instructor=instructor;
+                courseSectionClass.dayOfWeek=dayOfWeek;
+                courseSectionClass.weekList=weekList;
+                courseSectionClass.classBegin=classBegin;
+                courseSectionClass.classEnd=classEnd;
+                courseSectionClass.location=location;
+                cs.add(courseSectionClass);
             }
             ps.close();
         } catch (SQLException throwables) {
