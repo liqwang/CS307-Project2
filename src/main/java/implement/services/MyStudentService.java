@@ -14,6 +14,8 @@ import java.sql.*;
 import java.sql.Date;
 import java.time.DayOfWeek;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @ParametersAreNonnullByDefault
 public class MyStudentService implements StudentService {
@@ -44,52 +46,105 @@ public class MyStudentService implements StudentService {
         }
     }
 
-    @Override //最后写
+    /**
+     * CourseSearchEntry本质是Section
+     */
+    @Override
     public List<CourseSearchEntry> searchCourse(int studentId, int semesterId, @Nullable String searchCid, @Nullable String searchName, @Nullable String searchInstructor, @Nullable DayOfWeek searchDayOfWeek, @Nullable Short searchClassTime, @Nullable List<String> searchClassLocations, CourseType searchCourseType, boolean ignoreFull, boolean ignoreConflict, boolean ignorePassed, boolean ignoreMissingPrerequisites, int pageSize, int pageIndex) {
-        String sql= "select student_id,\n" +
-                    "       semester_id,\n" +
-                    "       course_id,\n" +
-                    "       c.name||'['||sec.name||']' full_name,\n" +
-                    "       first_name,last_name,\n" +
-                    "       day_of_week,\n" +
-                    "       begin_time,end_time,\n" +
-                    "       location,\n" +
-                    "       is_pf\n" +
-                    "from student_section ss\n" +
-                    "     join section sec on ss.section_id=sec.id\n" +
-                    "                      and student_id=?\n" +
-                    "     join semester sem on sec.semester_id=sem.id\n" +
-                    "                       and semester_id=?\n" +
-                    "     join section_class sc on sec.id = sc.section_id\n" +
-                    "     join instructor i on sc.instructor_id = i.id\n" +
-                    "     join course c on sec.course_id = c.id";
-        ArrayList<Info> infos = Util.query(Info.class, con, sql, studentId, semesterId);
-        if(searchCid!=null){}
-        if(searchName!=null){}
-        if(searchInstructor!=null){}
-        if(searchDayOfWeek!=null){}
-        if(searchClassTime!=null){}
-        if(searchClassLocations!=null){}
+        String sql= """
+                select student_id,
+                       semester_id,
+                       left_capacity,
+                       course_id,
+                       c.name||'['||sec.name||']' full_name,
+                       first_name,last_name,
+                       day_of_week,
+                       begin_time,end_time,
+                       location,
+                       is_pf
+                from student_section ss
+                     join section sec on ss.section_id=sec.id
+                                      and student_id=?
+                     join semester sem on sec.semester_id=sem.id
+                                       and sem.id=?
+                     join section_class sc on sec.id = sc.section_id
+                     join instructor i on sc.instructor_id = i.id
+                     join course c on sec.course_id = c.id""";
+        Stream<Info> infos = Util.query(Info.class, con, sql, studentId, semesterId).stream();
+        if(searchCid!=null){
+            infos=infos.filter(info -> info.courseId.equals(searchCid));
+        }
+        if(searchName!=null){
+            infos=infos.filter(info -> info.fullName.equals(searchName));
+        }
+        if(searchInstructor!=null){
+            infos=infos.filter(info -> (info.firstName+info.lastName).startsWith(searchInstructor)||
+                                       (info.firstName+' '+info.lastName).startsWith(searchInstructor)||
+                                        info.firstName.startsWith(searchInstructor)||
+                                        info.lastName.startsWith(searchInstructor));
+        }
+        if(searchDayOfWeek!=null){
+            infos=infos.filter(info -> info.dayOfWeek==searchDayOfWeek);
+        }
+        if(searchClassTime!=null){
+            infos=infos.filter(info -> info.beginTime<=searchClassTime &&
+                                       info.endTime>=searchClassTime);
+        }
+        if(searchClassLocations!=null){
+            infos=infos.filter(info -> searchClassLocations.contains(info.location));
+        }
         //CourseType不筛选了，摆
-        if(!ignoreFull){}
-        if(!ignoreConflict){}
-        if(!ignorePassed){}
-        if(!ignoreMissingPrerequisites){}
+        if(ignoreFull){
+            infos=infos.filter(info -> info.leftCapacity>0);
+        }
+        if(ignorePassed || ignoreMissingPrerequisites){
+            //获取该学生所有pass的课的courseId: passedCids
+            sql= """
+                    select distinct course_id
+                    from student_section
+                         join section on section_id = id
+                                     and student_id=?
+                                     and mark>=60""";
+            ArrayList<String> passedCids=Util.query(String.class,con,sql,studentId);
+            if(ignorePassed){
+                infos=infos.filter(info -> !passedCids.contains(info.courseId));
+            }
+            if(ignoreMissingPrerequisites){
+                //为了避免infos中重复的courseId多次检验
+                //1.首先生成不重复的courseId的HashSet: cids
+                HashSet<String> cids = new HashSet<>();
+                infos.forEach(info -> cids.add(info.courseId));
+                //2.筛选满足先修课的cids，生成filCids
+                ArrayList<String> filCids = (ArrayList<String>) cids.stream().
+                                            filter(cid -> passedPre(passedCids, cid)).
+                                            collect(Collectors.toList());
+                //3.再用filCids筛选infos
+                infos=infos.filter(info -> filCids.contains(info.courseId));
+            }
+        }
+        if(ignoreConflict){
+
+        }
+        //最后生成CourseSearchEntry
+        ArrayList<CourseSearchEntry> res = new ArrayList<>();
+        return null;
     }
     public class Info{
         public int studentId,
-                   semesterId;
+                   semesterId,
+                   leftCapacity;
         public String courseId,
                       fullName,
                       firstName,lastName;
         public DayOfWeek dayOfWeek;
-        public int beginTime,endTime;
+        public short beginTime,endTime;
         public String location;
         public Course.CourseGrading grading;
 
-        public Info(int studentId, int semesterId, String courseId, String fullName, String firstName, String lastName, DayOfWeek dayOfWeek, int beginTime, int endTime, String location, Course.CourseGrading grading) {
+        public Info(int studentId, int semesterId, int leftCapacity, String courseId, String fullName, String firstName, String lastName, DayOfWeek dayOfWeek, short beginTime, short endTime, String location, Course.CourseGrading grading) {
             this.studentId = studentId;
             this.semesterId = semesterId;
+            this.leftCapacity = leftCapacity;
             this.courseId = courseId;
             this.fullName = fullName;
             this.firstName = firstName;
@@ -102,35 +157,35 @@ public class MyStudentService implements StudentService {
         }
     }
 
+    //TODO: 修复rs中columnIndex的bug
     @Override
     public EnrollResult enrollCourse(int studentId, int sectionId) {
         //2&3&5.1这三种情况要区分开
         try(Connection con= SQLDataSource.getInstance().getSQLConnection()) {
             //1.班级不存在
-            String sql1 = "select total_capacity,left_capacity from section where id=?";
+            String sql1 = "select left_capacity from section where id=?";
             PreparedStatement ps = con.prepareStatement(sql1);
             ps.setInt(1, sectionId);
             ResultSet capacity=ps.executeQuery();
             if(!capacity.next()){return EnrollResult.COURSE_NOT_FOUND;}
             //2.已经选了这个班级
-            String sql2="select is_passed from student_section where section_id=? and student_id=?";
+            String sql2="select mark from student_section where section_id=? and student_id=?";
             ps = con.prepareStatement(sql2);
             ps.setInt(1,sectionId);
             ps.setInt(2,studentId);
-            //新选的课，mark=null, is_passed=null
-            //之前学期的课，mark不为null, is_passed为true或false
             if(ps.executeQuery().next()){return EnrollResult.ALREADY_ENROLLED;}
             //3.已经通过了这门课
-            String sql3="select course_id\n" +
-                        "from section join student_section\n" +
-                        "     on id=section_id\n" +
-                        "     and student_id=?       \n" +
-                        "     and is_passed=true       \n" +
-                        "     and course_id = (\n" +
-                        "         select course_id\n" +
-                        "         from section\n" +
-                        "         where id=?\n" +
-                        "     )";//找出之前通过的这门课的courseId，如果不为空，则已通过
+            String sql3= """
+                    select course_id
+                    from section join student_section
+                         on id=section_id
+                         and student_id=?
+                         and mark>=60
+                         and course_id = (
+                             select course_id
+                             from section
+                             where id=?
+                         )""";//找出之前通过的这门课的courseId，如果不为空，则已通过
             ps=con.prepareStatement(sql3);
             ps.setInt(1,studentId);
             ps.setInt(2,sectionId);
@@ -146,35 +201,37 @@ public class MyStudentService implements StudentService {
             }
             //5.冲突
             //5.1课程冲突(已经选了这门课)
-            String sql5="select course_id\n" +
-                        "from section join student_section\n" +
-                        "     on id=section_id\n" +
-                        "     and student_id=?\n" +
-                        "     and mark is null\n" +
-                        "     and course_id= (\n" +
-                        "         select course_id\n" +
-                        "         from section\n" +
-                        "         where id=?\n" +
-                        "     )";//本学期所选的这门课的courseId，如果不为空，则已选过这门课
+            String sql5= """
+                    select course_id
+                    from section join student_section
+                         on id=section_id
+                         and student_id=?
+                         and mark is null
+                         and course_id= (
+                             select course_id
+                             from section
+                             where id=?
+                         )""";//本学期所选的这门课的courseId，如果不为空，则已选过这门课
             ps = con.prepareStatement(sql5);
             if(ps.executeQuery().next()){return EnrollResult.COURSE_CONFLICT_FOUND;}
             //5.2时间冲突
             //5.2.1获取该学生本学期的所有class中和该sectionId在同一DayOfWeek的classes: sameDayClasses
-            String sql6="select day_of_week,class_begin,class_end,week_list\n" +
-                        "from student_section\n" +
-                        "     join section on section_id=section.id\n" +
-                        "                  and student_id=?\n" +
-                        "                  and semester_id=(\n" +
-                        "                          select semester_id\n" +
-                        "                          from section\n" +
-                        "                          where id=?\n" +
-                        "                      )\n" +
-                        "     join section_class on section_class.section_id=section.id\n" +
-                        "                        and day_of_week in(\n" +
-                        "                                select day_of_week\n" +
-                        "                                from section_class\n" +
-                        "                                where section_id=?\n" +
-                        "                            )";
+            String sql6= """
+                    select day_of_week,class_begin,class_end,week_list
+                    from student_section
+                         join section on section_id=section.id
+                                      and student_id=?
+                                      and semester_id=(
+                                              select semester_id
+                                              from section
+                                              where id=?
+                                          )
+                         join section_class on section_class.section_id=section.id
+                                            and day_of_week in(
+                                                    select day_of_week
+                                                    from section_class
+                                                    where section_id=?
+                                                )""";
             ps=con.prepareStatement(sql6);
             ps.setInt(1,studentId);
             ps.setInt(2,sectionId);
@@ -182,9 +239,10 @@ public class MyStudentService implements StudentService {
             rs = ps.executeQuery();
             List<CourseSectionClass> sameDayClasses = getClassList(rs);
             //5.2.2获取该sectionId的sectionClass: selectClasses
-            String sql7="select day_of_week,class_begin,class_end,week_list\n" +
-                        "from section_class\n" +
-                        "where section_id=?;";
+            String sql7= """
+                    select day_of_week,class_begin,class_end,week_list
+                    from section_class
+                    where section_id=?;""";
             ps=con.prepareStatement(sql7);
             ps.setInt(1,sectionId);
             rs=ps.executeQuery();
@@ -206,12 +264,12 @@ public class MyStudentService implements StudentService {
                 }
             }
             //6.班级满了
-            if(capacity.getInt(5)==capacity.getInt(6)){
+            if(capacity.getInt(1)==0){
                 return EnrollResult.COURSE_IS_FULL;
             }
             //7.选课成功
             //7.1添加一条student_section关系
-            String sql8="insert into student_section values (?,?,null,null)";
+            String sql8="insert into student_section values (?,?,-1)";//本学期新选的课，mark为-1
             ps=con.prepareStatement(sql8);
             ps.setInt(1,studentId);
             ps.setInt(2,sectionId);
@@ -260,20 +318,22 @@ public class MyStudentService implements StudentService {
     private void updateLeftCapacity(Connection con,int sectionId,boolean isAdd) throws SQLException{
         //isAdd为true: left_capacity++
         //isAdd为false: left_capacity--
-        String addSql="update section\n" +
-                      "set left_capacity=(\n" +
-                      "        select left_capacity\n" +
-                      "        from section\n" +
-                      "        where id=?\n" +
-                      "    )+1\n" +
-                      "where id=?";
-        String dropSql="update section\n" +
-                       "set left_capacity=(\n" +
-                       "        select left_capacity\n" +
-                       "        from section\n" +
-                       "        where id=?\n" +
-                       "    )-1\n" +
-                       "where id=?";
+        String addSql= """
+                update section
+                set left_capacity=(
+                        select left_capacity
+                        from section
+                        where id=?
+                    )+1
+                where id=?""";
+        String dropSql= """
+                update section
+                set left_capacity=(
+                        select left_capacity
+                        from section
+                        where id=?
+                    )-1
+                where id=?""";
         PreparedStatement ps;
         if(isAdd){ps=con.prepareStatement(addSql);}
         else{ps=con.prepareStatement(dropSql);}
@@ -301,89 +361,88 @@ public class MyStudentService implements StudentService {
     @Override
     public boolean passedPrerequisitesForCourse(int studentId, String courseId) {
         try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
-            //1.获取所有通过的课的id: passedCids
-            String sql1="select course_id\n" +
-                        "from section\n" +
-                        "where id in(\n" +
-                        "    select section_id\n" +
-                        "    from student_section\n" +
-                        "    where student_id=? and is_passed=true\n" +
-                        ")";
-            PreparedStatement ps = con.prepareStatement(sql1);
-            ps.setInt(1,studentId);
-            ResultSet rs = ps.executeQuery();
-            HashSet<String> passedCids = new HashSet<>();
-            while(rs.next()){
-                passedCids.add(rs.getString(2));
-            }
-            //2.获取布尔表达式
-            //2.1获取先修课String: pre
-            String sql2="select prerequisite from course where id=?";
-            ps = con.prepareStatement(sql2);
-            ps.setString(1,courseId);
-            String pre = ps.executeQuery().getString(6);
-            //2.2提取出pre中的课程id: eg:((MA101A OR MA101B) AND MA103A)
-            String[] preCids = pre.split(" (AND|OR) ");// ((MA101A MA101B) MA103A)
-            for (int i = 0; i < preCids.length; i++) {
-                preCids[i]=preCids[i].replaceAll("[()]","");
-            }//去除括号: MA101A MA101B MA103A
-            //2.3将pre转为布尔表达式
-            pre=pre.replace(" AND ","&").replace(" OR ","|");
-            for (String preCid : preCids) {
-                pre=pre.replace(preCid,passedCids.contains(preCid)?"T":"F");
-            }
-            //3.计算布尔表达式pre: ((T|F)&T)
-            //3.1用逆波兰算法将pre转为后缀表达式postfix: TF|T&
-            Stack<Character> stack = new Stack<>();
-            StringBuilder postfix = new StringBuilder();
-            for (char c : pre.toCharArray()) {
-                switch (c) {
-                    case '(' -> stack.push('(');
-                    case ')' -> {
-                        char top;
-                        while ((top = stack.pop()) != '(') {
-                            postfix.append(top);
-                        }
-                    }
-                    case '&' -> {
-                        if (!stack.isEmpty() && stack.peek() == '&') {
-                            postfix.append(stack.pop());
-                        }
-                        stack.push('&');
-                    }
-                    case '|' -> {
-                        if (!stack.isEmpty() && stack.peek() == '&') {
-                            postfix.append(stack.pop());
-                        }
-                        if (!stack.isEmpty() && stack.peek() == '|') {
-                            postfix.append(stack.pop());
-                        }
-                        stack.push('|');
-                    }
-                    default -> postfix.append(c);//对应于T,F
-                }
-            }
-            while (!stack.isEmpty()){
-                postfix.append(stack.pop());
-            }
-            //3.2用栈计算后缀表达式postfix: TF|T&
-            Stack<Boolean> stack2 = new Stack<>();
-            for (char c : postfix.toString().toCharArray()) {
-                switch (c){
-                    case '|' -> stack2.push(stack2.pop() | stack2.pop());
-                    //注意这里不能用||，否则可能只pop一个，出现bug
-                    case '&' -> stack2.push(stack2.pop() & stack2.pop());
-                    //注意这里不能用&&，否则可能只pop一个，出现bug
-                    case 'T' -> stack2.push(true);
-                    case 'F' -> stack2.push(false);
-                }
-            }
-            return stack2.pop();
+            //获取所有通过的课的id: passedCids
+            String sql1= """
+                    select distinct course_id
+                    from section
+                    where id in(
+                        select section_id
+                        from student_section
+                        where student_id=? and mark>=60
+                    )""";
+            ArrayList<String> passedCids = Util.query(String.class, con, sql1, studentId);
+            return passedPre(passedCids,courseId);
         } catch (SQLException e) {
             e.printStackTrace();
             System.exit(1);
             return false;
         }
+    }
+    /**
+     * 用于复用的辅助判断方法，判断passedCids是否满足了courseId的先修课要求
+     */
+    public boolean passedPre(ArrayList<String> passedCids,String courseId){
+        //1.获取布尔表达式
+        //1.1获取先修课String: pre
+        String sql="select prerequisite from course where id=?";
+        String pre = Util.query(String.class, con, sql, courseId).get(0);
+        //1.2提取出pre中的课程id: eg:((MA101A OR MA101B) AND MA103A)
+        String[] preCids = pre.split(" (AND|OR) ");// ((MA101A MA101B) MA103A)
+        for (int i = 0; i < preCids.length; i++) {
+            preCids[i]=preCids[i].replaceAll("[()]","");
+        }//去除括号: MA101A MA101B MA103A
+        //1.3将pre转为布尔表达式
+        pre=pre.replace(" AND ","&").replace(" OR ","|");
+        for (String preCid : preCids) {
+            pre=pre.replace(preCid,passedCids.contains(preCid)?"T":"F");
+        }
+        //2.计算布尔表达式pre: ((T|F)&T)
+        //2.1用逆波兰算法将pre转为后缀表达式postfix: TF|T&
+        Stack<Character> stack = new Stack<>();
+        StringBuilder postfix = new StringBuilder();
+        for (char c : pre.toCharArray()) {
+            switch (c) {
+                case '(' -> stack.push('(');
+                case ')' -> {
+                    char top;
+                    while ((top = stack.pop()) != '(') {
+                        postfix.append(top);
+                    }
+                }
+                case '&' -> {
+                    if (!stack.isEmpty() && stack.peek() == '&') {
+                        postfix.append(stack.pop());
+                    }
+                    stack.push('&');
+                }
+                case '|' -> {
+                    if (!stack.isEmpty() && stack.peek() == '&') {
+                        postfix.append(stack.pop());
+                    }
+                    if (!stack.isEmpty() && stack.peek() == '|') {
+                        postfix.append(stack.pop());
+                    }
+                    stack.push('|');
+                }
+                default -> postfix.append(c);//对应于T,F
+            }
+        }
+        while (!stack.isEmpty()){
+            postfix.append(stack.pop());
+        }
+        //2.2用栈计算后缀表达式postfix: TF|T&
+        Stack<Boolean> stack2 = new Stack<>();
+        for (char c : postfix.toString().toCharArray()) {
+            switch (c){
+                case '|' -> stack2.push(stack2.pop() | stack2.pop());
+                //注意这里不能用||，否则可能只pop一个，出现bug
+                case '&' -> stack2.push(stack2.pop() & stack2.pop());
+                //注意这里不能用&&，否则可能只pop一个，出现bug
+                case 'T' -> stack2.push(true);
+                case 'F' -> stack2.push(false);
+            }
+        }
+        return stack2.pop();
     }
 
     @Override

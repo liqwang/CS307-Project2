@@ -94,6 +94,7 @@ public class MyMajorService implements MajorService {
     @Override
     public void addMajorCompulsoryCourse(int majorId, String courseId) { //这两个没看懂
         try(Connection con = SQLDataSource.getInstance().getSQLConnection()){
+
         }catch (SQLException throwables) {
         }
     }
