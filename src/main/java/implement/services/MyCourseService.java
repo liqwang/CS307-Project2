@@ -216,7 +216,13 @@ public class MyCourseService implements CourseService {
                     grading= Course.CourseGrading.HUNDRED_MARK_SCORE;
                 }
                 String prerequisite=rs.getString(6);
-                result.add(new Course(id,name,credit,classHour,grading,prerequisite));
+                Course course = new Course();
+                course.id = id;
+                course.name = name;
+                course.credit = credit;
+                course.classHour = classHour;
+                course.grading = grading;
+                result.add(course);
             }
         } catch (SQLException throwables) {
             throwables.printStackTrace();
@@ -235,7 +241,12 @@ public class MyCourseService implements CourseService {
             ps.setInt(2,semesterId);
             ResultSet rs = ps.executeQuery();
             while(rs.next()){
-                cs.add(new CourseSection(rs.getInt(1),courseId,semesterId,rs.getString(4),rs.getInt(5),rs.getInt(6)));
+                CourseSection courseSection = new CourseSection();
+                courseSection.id = rs.getInt(1);
+                courseSection.name = rs.getString(4);
+                courseSection.totalCapacity = rs.getInt(5);
+                courseSection.leftCapacity = rs.getInt(6);
+                cs.add(courseSection);
             }
             ps.close();
         } catch (SQLException throwables) {
@@ -262,6 +273,11 @@ public class MyCourseService implements CourseService {
                 grading= Course.CourseGrading.HUNDRED_MARK_SCORE;
             }
             ps.close();
+            Course course = new Course();
+            course.id = rs.getString(1);
+            course.name = rs.getString(2);
+            course.credit = rs.getInt(3);
+            course.grading = grading;
             return new Course(rs.getString(1),rs.getString(2),rs.getInt(3),rs.getInt(4),grading,rs.getString(6));
         } catch (SQLException throwables) {
             throwables.printStackTrace();
