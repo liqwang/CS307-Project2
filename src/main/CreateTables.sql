@@ -120,7 +120,6 @@ create table if not exists student_section
         constraint fk_section
             references section,
     mark       integer,
-    is_passed  boolean,
     constraint pk_student_section
         primary key (student_id, section_id)
 );
