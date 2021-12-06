@@ -6,6 +6,7 @@ import cn.edu.sustech.cs307.dto.Major;
 import cn.edu.sustech.cs307.exception.EntityNotFoundException;
 import cn.edu.sustech.cs307.exception.IntegrityViolationException;
 import cn.edu.sustech.cs307.service.MajorService;
+import implement.Util;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.sql.Connection;
@@ -17,6 +18,15 @@ import java.util.List;
 
 @ParametersAreNonnullByDefault
 public class MyMajorService implements MajorService {
+    Connection con;
+    {
+        try {
+            con = SQLDataSource.getInstance().getSQLConnection();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
     @Override
     public int addMajor(String name, int departmentId) {
         try(Connection con= SQLDataSource.getInstance().getSQLConnection()) {
@@ -93,14 +103,13 @@ public class MyMajorService implements MajorService {
 
     @Override
     public void addMajorCompulsoryCourse(int majorId, String courseId) { //这两个没看懂
-        try(Connection con = SQLDataSource.getInstance().getSQLConnection()){
-
-        }catch (SQLException throwables) {
-        }
+        String sql = "insert into major_course values (?, ?, 1)";
+        Util.update(con, sql, majorId, courseId);
     }
 
     @Override
     public void addMajorElectiveCourse(int majorId, String courseId) {
-
+        String sql = "insert into major_course values (?, ?, 1)";
+        Util.update(con, sql, majorId, courseId);
     }
 }
