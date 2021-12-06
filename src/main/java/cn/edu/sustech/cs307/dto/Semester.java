@@ -1,9 +1,6 @@
 package cn.edu.sustech.cs307.dto;
 
-import com.sun.jdi.connect.Connector;
-
 import java.sql.Date;
-import java.sql.SQLException;
 import java.util.Objects;
 
 /**
@@ -11,6 +8,7 @@ import java.util.Objects;
  */
 public class Semester {
     public int id;
+
     public String name;
 
     /**
@@ -18,16 +16,6 @@ public class Semester {
      * If the date is ridiculous, such as 1900-1-1 or 3000-1-1, it should not give error.
      */
     public Date begin, end;
-
-    public Semester(int id, String name, Date begin, Date end) { //可能有bug（关于丢出错误）
-        this.id = id;
-        this.name = name;
-        if(begin.after(end)) throw new IllegalAccessError(); //如果开始时间在结束时间之后，丢出数据非法错误
-        else{
-            this.begin = begin;
-            this.end = end;
-        }
-    }
 
     @Override
     public boolean equals(Object o) {

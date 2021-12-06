@@ -40,10 +40,7 @@ public class MyDepartmentService implements DepartmentService {
     @Override
     public List<Department> getAllDepartments() {
         String sql="select * from department";
-        ArrayList<Department> res=Util.query(Department.class,con,sql);
-        if(res.isEmpty()){
-            throw new EntityNotFoundException();
-        }else {return res;}
+        return Util.query(Department.class,con,sql);
     }
 
     @Override

@@ -8,9 +8,6 @@ import java.io.Closeable;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-/**
- * 创建HikariDataSource并登录，无需改动
- */
 @ParametersAreNonnullByDefault
 public final class SQLDataSource implements Closeable {
     private static final SQLDataSource INSTANCE = new SQLDataSource();

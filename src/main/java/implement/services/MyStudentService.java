@@ -300,6 +300,8 @@ public class MyStudentService implements StudentService {
                     weekList.add((short)o);
                 }
             }
+            CourseSectionClass clazz = new CourseSectionClass();
+            clazz
             res.add(new CourseSectionClass(
             0,null,dayOfWeek,weekList,null,classBegin,classEnd,null));
         }

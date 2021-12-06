@@ -16,22 +16,10 @@ public class CourseSectionClass {
     // The given elements in weekList are sorted.
     // CourseSectionClasses in same courseSection may have different week list.
     public Set<Short> weekList;
-    public CourseSection section;
     // The time quantum of start and end (closed interval).
     // For example: classStart is 3 while classEnd is 4
     public short classBegin, classEnd;
     public String location;
-
-    public CourseSectionClass(int id, Instructor instructor, DayOfWeek dayOfWeek, Set<Short> weekList, CourseSection section, short classBegin, short classEnd, String location) {
-        this.id = id;
-        this.instructor = instructor;
-        this.dayOfWeek = dayOfWeek;
-        this.weekList = weekList;
-        this.section = section;
-        this.classBegin = classBegin;
-        this.classEnd = classEnd;
-        this.location = location;
-    }
 
     @Override
     public boolean equals(Object o) {

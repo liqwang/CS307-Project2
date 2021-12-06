@@ -1,7 +1,7 @@
 package cn.edu.sustech.cs307.exception;
 
 /**
- * In all <b>add</b> method, if some parameters are invalid, throw IntegrityViolationException
+ * In all add method, if some of parameters are invalid, throw IntegrityViolationException
  */
 public class IntegrityViolationException extends RuntimeException {
     public IntegrityViolationException() {

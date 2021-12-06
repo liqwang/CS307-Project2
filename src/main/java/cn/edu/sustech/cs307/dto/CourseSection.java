@@ -4,26 +4,15 @@ import java.util.Objects;
 
 public class CourseSection {
     /**
-     *For example, it can represent the id of section "No.1 Chinese class of database principle"
+     *For example it can represent the id of section "No.1 Chinese class of database principle"
      */
     public int id;
-    public String courseId;
-    public int semesterId;
     /**
      * if the course name is "database principle", the name here could be "No.1 Chinese class", "No.1 English class" ...
      */
     public String name;
 
     public int totalCapacity, leftCapacity;
-
-    public CourseSection(int id, String courseId, int semesterId, String name, int totalCapacity, int leftCapacity) {
-        this.id = id;
-        this.courseId = courseId;
-        this.semesterId = semesterId;
-        this.name = name;
-        this.totalCapacity = totalCapacity;
-        this.leftCapacity = leftCapacity;
-    }
 
     @Override
     public boolean equals(Object o) {

@@ -13,7 +13,6 @@ public abstract class User {
      */
     public String fullName;
 
-
     @Override
     public boolean equals(Object o) {
         if (this == o) {

@@ -126,7 +126,6 @@ public final class DataImporter {
         });
     }
 
-    @SuppressWarnings("all")
     private static <T> T readValueFromFile(String fileName, Class<T> tClass) {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.enableDefaultTypingAsProperty(ObjectMapper.DefaultTyping.JAVA_LANG_OBJECT, "@type");

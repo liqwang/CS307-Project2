@@ -3,18 +3,8 @@ package cn.edu.sustech.cs307.dto;
 import java.util.Objects;
 
 public class Course {
-
     public enum CourseGrading {
         PASS_OR_FAIL, HUNDRED_MARK_SCORE
-    }
-
-    public Course(String id, String name, int credit, int classHour, CourseGrading grading, String prerequisite) {
-        this.id = id;
-        this.name = name;
-        this.credit = credit;
-        this.classHour = classHour;
-        this.grading = grading;
-        this.prerequisite = prerequisite;
     }
 
     // A courseId is valid if it has been added to the system with addCourse()
@@ -28,8 +18,6 @@ public class Course {
     public int classHour;
 
     public CourseGrading grading;
-
-    public String prerequisite;
 
     @Override
     public boolean equals(Object o) {

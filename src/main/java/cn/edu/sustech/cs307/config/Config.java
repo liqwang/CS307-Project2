@@ -5,9 +5,6 @@ import cn.edu.sustech.cs307.factory.ServiceFactory;
 import java.io.FileInputStream;
 import java.util.Properties;
 
-/**
- * 配置类，无需改动
- */
 public final class Config {
     private static final Properties properties = new Properties();
 

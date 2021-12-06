@@ -13,7 +13,7 @@ import java.util.Set;
 public interface CourseService {
     /**
      * Add one course according to following parameters.
-     * If some parameters are invalid, throw {@link cn.edu.sustech.cs307.exception.IntegrityViolationException}
+     * If some of parameters are invalid, throw {@link cn.edu.sustech.cs307.exception.IntegrityViolationException}
      *
      * @param courseId represents the id of course. For example, CS307, CS309
      * @param courseName the name of course
@@ -27,7 +27,7 @@ public interface CourseService {
 
     /**
      * Add one course section according to following parameters:
-     * If some parameters are invalid, throw {@link cn.edu.sustech.cs307.exception.IntegrityViolationException}
+     * If some of parameters are invalid, throw {@link cn.edu.sustech.cs307.exception.IntegrityViolationException}
      *
      * @param courseId represents the id of course. For example, CS307, CS309
      * @param semesterId the id of semester
@@ -40,8 +40,15 @@ public interface CourseService {
 
     /**
      * Add one course section class according to following parameters:
-     * If some parameters are invalid, throw {@link cn.edu.sustech.cs307.exception.IntegrityViolationException}
+     * If some of parameters are invalid, throw {@link cn.edu.sustech.cs307.exception.IntegrityViolationException}
      *
+     * @param sectionId
+     * @param instructorId
+     * @param dayOfWeek
+     * @param weekList
+     * @param classStart
+     * @param classEnd
+     * @param location
      * @return the CourseSectionClass id of new inserted line.
      */
     int addCourseSectionClass(int sectionId, int instructorId, DayOfWeek dayOfWeek, Set<Short> weekList,
@@ -53,6 +60,7 @@ public interface CourseService {
      * shall be removed together.
      * More specifically, remove all related courseSection, all related CourseSectionClass and all related select course records
      * when a course has been removed
+     * @param courseId
      */
     void removeCourse(String courseId);
 
@@ -61,6 +69,7 @@ public interface CourseService {
      *  shall be removed together.
      *   More specifically, remove all related CourseSectionClass and all related select course records
      *   when a courseSection has been removed
+     * @param sectionId
      */
     void removeCourseSection(int sectionId);
 
@@ -68,6 +77,7 @@ public interface CourseService {
      *  To remove an entity from the system, related entities dependent on this entity (usually rows referencing the row to remove through foreign keys in a relational database)
      *  shall be removed together.
      *  More specifically, only remove course section class
+     * @param classId
      */
     void removeCourseSectionClass(int classId);
 
@@ -76,14 +86,16 @@ public interface CourseService {
     /**
      * Return all satisfied CourseSections.
      * We will compare the all other fields in CourseSection besides the id.
-     * @param courseId if the key is non-existent, please throw {@link cn.edu.sustech.cs307.exception.EntityNotFoundException}.
-     * @param semesterId if the key is non-existent, please throw {@link cn.edu.sustech.cs307.exception.EntityNotFoundException}.
+     * @param courseId if the key is non-existent, please throw an EntityNotFoundException.
+     * @param semesterId if the key is non-existent, please throw an EntityNotFoundException.
+     * @return
      */
     List<CourseSection> getCourseSectionsInSemester(String courseId, int semesterId);
 
     /**
-     * If there is no Course about specific id, throw {@link cn.edu.sustech.cs307.exception.EntityNotFoundException}.
-     * @param sectionId if the key is non-existent, please throw {@link cn.edu.sustech.cs307.exception.EntityNotFoundException}.
+     * If there is no Course about specific id, throw EntityNotFoundException.
+     * @param sectionId if the key is non-existent, please throw an EntityNotFoundException.
+     * @return
      */
     Course getCourseBySection(int sectionId);
 
@@ -91,19 +103,22 @@ public interface CourseService {
      *
      * @param sectionId the id of {@code CourseSection}
      *                  if the key is non-existent, please throw an EntityNotFoundException.
+     * @return
      */
     List<CourseSectionClass> getCourseSectionClasses(int sectionId);
 
     /**
      *
-     * @param classId if the key is non-existent, please throw {@link cn.edu.sustech.cs307.exception.EntityNotFoundException}.
+     * @param classId if the key is non-existent, please throw an EntityNotFoundException.
+     * @return
      */
     CourseSection getCourseSectionByClass(int classId);
 
     /**
      *
-     * @param courseId  if the key is non-existent, please throw {@link cn.edu.sustech.cs307.exception.EntityNotFoundException}.
-     * @param semesterId if the key is non-existent, please throw {@link cn.edu.sustech.cs307.exception.EntityNotFoundException}.
+     * @param courseId  if the key is non-existent, please throw an EntityNotFoundException.
+     * @param semesterId if the key is non-existent, please throw an EntityNotFoundException.
+     * @return
      */
     List<Student> getEnrolledStudentsInSemester(String courseId, int semesterId);
 }

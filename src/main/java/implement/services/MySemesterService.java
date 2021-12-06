@@ -3,7 +3,6 @@ package implement.services;
 import cn.edu.sustech.cs307.database.SQLDataSource;
 import cn.edu.sustech.cs307.dto.Semester;
 import cn.edu.sustech.cs307.exception.EntityNotFoundException;
-import cn.edu.sustech.cs307.exception.IntegrityViolationException;
 import cn.edu.sustech.cs307.service.SemesterService;
 import implement.Util;
 
@@ -56,7 +55,12 @@ public class MySemesterService implements SemesterService {
                 String name = rs.getString(2);
                 Date begin = rs.getDate(3);
                 Date end = rs.getDate(4);
-                semesters.add(new Semester(id, name, begin, end));
+                Semester sem = new Semester();
+                sem.id=id;
+                sem.name=name;
+                sem.begin=begin;
+                sem.end=end;
+                semesters.add(sem);
             }
             ps.close();
         } catch (Exception throwables) {
@@ -76,9 +80,13 @@ public class MySemesterService implements SemesterService {
             String name = rs.getString(2);
             Date begin = rs.getDate(3);
             Date end = rs.getDate(4);
-            Semester semester = new Semester(id, name, begin, end);
+            Semester sem = new Semester();
+            sem.id=id;
+            sem.name=name;
+            sem.begin=begin;
+            sem.end=end;
             ps.close();
-            return semester;
+            return sem;
 
         } catch (SQLException throwables) {
             throwables.printStackTrace();
