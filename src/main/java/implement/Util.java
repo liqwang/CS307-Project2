@@ -1,7 +1,6 @@
 package implement;
 
 import cn.edu.sustech.cs307.dto.Course;
-import cn.edu.sustech.cs307.exception.EntityNotFoundException;
 import cn.edu.sustech.cs307.exception.IntegrityViolationException;
 
 import java.lang.reflect.Constructor;
@@ -12,20 +11,20 @@ import java.util.ArrayList;
 
 public class Util {
     /**
-     * 通用的增、删、改操作
+     * 通用的增、删、改操作，返回受影响的行数
      */
-    public static void update(Connection con,String sql,Object... param) throws SQLException{
-        PreparedStatement ps=null;
+    public static int update(Connection con,String sql,Object... param){
         try {
-            ps = con.prepareStatement(sql);
+            PreparedStatement ps = con.prepareStatement(sql);
             for (int i = 0; i < param.length; i++) {
                 ps.setObject(i + 1, param[i]);
             }
+            return ps.executeUpdate();
         } catch (SQLException e){
             e.printStackTrace();
             System.exit(1);
+            return -1;
         }
-        ps.executeUpdate();
     }
 
     /**
@@ -61,12 +60,7 @@ public class Util {
                 ps.setObject(i+1,param[i]);
             }
             ResultSet rs;
-            try {
-                rs = ps.executeQuery();
-            }catch (SQLException e){
-                e.printStackTrace();
-                throw new EntityNotFoundException();
-            }
+            rs = ps.executeQuery();
             ResultSetMetaData rsmd = rs.getMetaData();
             int col = rsmd.getColumnCount();
             Constructor<T> constr = (Constructor<T>)clazz.getDeclaredConstructors()[0];
