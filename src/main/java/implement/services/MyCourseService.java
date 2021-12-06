@@ -333,7 +333,12 @@ public class MyCourseService implements CourseService {
             ps.setInt(1,classId);
             ResultSet rs = ps.executeQuery();
             ps.close();
-            return new CourseSection(rs.getInt(1),rs.getString(2),rs.getInt(3),rs.getString(4),rs.getInt(5),rs.getInt(6));
+            CourseSection courseSection=new CourseSection();
+            courseSection.id=rs.getInt(1);
+            courseSection.name=rs.getString(4);
+            courseSection.totalCapacity=rs.getInt(5);
+            courseSection.leftCapacity=rs.getInt(6);
+            return courseSection;
         } catch (SQLException throwables) {
             throwables.printStackTrace();
             throw new EntityNotFoundException();
