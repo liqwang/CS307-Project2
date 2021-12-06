@@ -5,6 +5,7 @@ import cn.edu.sustech.cs307.dto.Semester;
 import cn.edu.sustech.cs307.exception.EntityNotFoundException;
 import cn.edu.sustech.cs307.exception.IntegrityViolationException;
 import cn.edu.sustech.cs307.service.SemesterService;
+import implement.Util;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.sql.*;
@@ -13,30 +14,27 @@ import java.util.List;
 
 @ParametersAreNonnullByDefault
 public class MySemesterService implements SemesterService {
-    @Override
-    public int addSemester(String name, Date begin, Date end) {
-        try(Connection con = SQLDataSource.getInstance().getSQLConnection()){
-            String sql="insert into semester(name, begin_time, end_time) values (?,?,?)";
-            PreparedStatement ps = con.prepareStatement(sql,PreparedStatement.RETURN_GENERATED_KEYS);
-                ps.setString(1, name);
-                ps.setDate(2, begin);
-                ps.setDate(3, end);
-            ps.executeUpdate();
-            return ps.getGeneratedKeys().getInt(1);
-        }catch(SQLException throwables){
-            throwables.printStackTrace();
-            throw new IntegrityViolationException();
+    Connection con;
+    {
+        try {
+            con = SQLDataSource.getInstance().getSQLConnection();
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 
     @Override
+    public int addSemester(String name, Date begin, Date end) {
+        String sql="insert into semester(name, begin_time, end_time) values (?,?,?)";
+        return Util.addAndGetKey(con, sql, name, begin, end);
+    }
+
+    @Override
     public void removeSemester(int semesterId) {
-        try(Connection con = SQLDataSource.getInstance().getSQLConnection()){
+        try{
             // 先删除相关选课记录，再删除学期
             String sql1 = "delete from section where semester_id = ?";
-            PreparedStatement ps1 = con.prepareStatement(sql1);
-                ps1.setInt(1, semesterId);
-            ps1.executeUpdate();
+            Util.update(con, sql1, semesterId);
             String sql2 ="delete from department where id = ?";
             PreparedStatement ps2 = con.prepareStatement(sql2);
                 ps2.setInt(1, semesterId);
@@ -49,7 +47,7 @@ public class MySemesterService implements SemesterService {
     @Override
     public List<Semester> getAllSemesters() {
         ArrayList<Semester> semesters = new ArrayList<>();
-        try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
+        try{
             String sql="select * from semester";
             PreparedStatement ps = con.prepareStatement(sql);
             ResultSet rs = ps.executeQuery();

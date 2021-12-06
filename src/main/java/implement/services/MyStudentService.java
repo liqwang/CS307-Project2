@@ -3,6 +3,7 @@ package implement.services;
 import cn.edu.sustech.cs307.database.SQLDataSource;
 import cn.edu.sustech.cs307.dto.*;
 import cn.edu.sustech.cs307.dto.grade.Grade;
+import cn.edu.sustech.cs307.exception.EntityNotFoundException;
 import cn.edu.sustech.cs307.exception.IntegrityViolationException;
 import cn.edu.sustech.cs307.service.StudentService;
 import implement.Util;
@@ -387,6 +388,29 @@ public class MyStudentService implements StudentService {
 
     @Override
     public Major getStudentMajor(int studentId) {
-        return null;
+        try{
+            String sql = "select m.id, m.name, m.department_id\n" +
+                    "from student join major m on m.id = student.major_id\n" +
+                    "where student.id = ?";
+            PreparedStatement ps = con.prepareStatement(sql);
+            ps.setInt(1, studentId);
+            ResultSet rs = ps.executeQuery();
+            int mid = rs.getInt(1);
+            String name = rs.getString(2);
+            int did = rs.getInt(3);
+            String sql2 = "select *\n" +
+                    "from department\n" +
+                    "where id = ?";
+            PreparedStatement ps2 = con.prepareStatement(sql2);
+            ps2.setInt(1, did);
+            ResultSet rs2 = ps2.executeQuery();
+            String d_name = rs2.getString(2);
+            Department department = new Department(did, d_name);
+            Major major = new Major(mid, name, department);
+            return major;
+        }catch(SQLException throwables){
+            throwables.printStackTrace();
+            throw new EntityNotFoundException();
+        }
     }
 }
