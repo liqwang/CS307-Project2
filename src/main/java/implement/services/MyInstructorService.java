@@ -34,13 +34,14 @@ public class MyInstructorService implements InstructorService {
     public List<CourseSection> getInstructedCourseSections(int instructorId, int semesterId) {
         ArrayList<CourseSection> result = new ArrayList<>();
         try (Connection con=SQLDataSource.getInstance().getSQLConnection()){
-            String sql="select sec.*\n" +
-                        "from instructor i\n" +
-                        "     join section_class sc on i.id = sc.instructor_id\n" +
-                        "                          and i.id=?\n" +
-                        "     join section sec on sc.section_id=sec.id\n" +
-                        "     join semester sem on sec.semester_id = sem.id\n" +
-                        "                      and sec.id=?;";
+            String sql= """
+                    select sec.*
+                    from instructor i
+                         join section_class sc on i.id = sc.instructor_id
+                                              and i.id=?
+                         join section sec on sc.section_id=sec.id
+                         join semester sem on sec.semester_id = sem.id
+                                          and sec.id=?;""";
             PreparedStatement ps = con.prepareStatement(sql);
             ps.setInt(1,instructorId);
             ps.setInt(2,semesterId);

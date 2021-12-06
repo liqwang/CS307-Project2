@@ -248,9 +248,10 @@ public class MyCourseService implements CourseService {
     @Override
     public Course getCourseBySection(int sectionId) {
         try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
-            String sql="select distinct c.id,c.name,c.credit,c.is_pf,c.prerequisite\n" +
-                    "from course c join section s on c.id = s.course_id\n" +
-                    "where s.id=?";
+            String sql= """
+                    select distinct c.id,c.name,c.credit,c.is_pf,c.prerequisite
+                    from course c join section s on c.id = s.course_id
+                    where s.id=?""";
             PreparedStatement ps = con.prepareStatement(sql);
             ps.setInt(1,sectionId);
             ResultSet rs = ps.executeQuery();
@@ -272,10 +273,11 @@ public class MyCourseService implements CourseService {
     public List<CourseSectionClass> getCourseSectionClasses(int sectionId) {
         ArrayList<CourseSectionClass> cs=new ArrayList<>();
         try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
-            String sql="select * from section_class\n" +
-                    "join instructor i on section_class.instructor_id = i.id\n" +
-                    "join section s on section_class.section_id = s.id\n" +
-                    "where section_id=?;";
+            String sql= """
+                    select * from section_class
+                    join instructor i on section_class.instructor_id = i.id
+                    join section s on section_class.section_id = s.id
+                    where section_id=?;""";
             PreparedStatement ps = con.prepareStatement(sql);
             ps.setInt(1,sectionId);
             ResultSet rs = ps.executeQuery();
@@ -284,7 +286,7 @@ public class MyCourseService implements CourseService {
             Instructor instructor=new Instructor(id,fullName);
             DayOfWeek dayOfWeek=DayOfWeek.of(rs.getInt(4));
             Short[] arr= (Short[]) rs.getArray(8).getArray();
-            Set<Short> weekList=new HashSet<Short>(Arrays.asList(arr));//不确定
+            Set<Short> weekList=new HashSet<>(Arrays.asList(arr));//不确定
             CourseSection section=new CourseSection(rs.getInt(1),rs.getString(11),rs.getInt(12),
                     rs.getString(13),rs.getInt(14),rs.getInt(15));
             short classBegin, classEnd;
@@ -305,9 +307,10 @@ public class MyCourseService implements CourseService {
     @Override
     public CourseSection getCourseSectionByClass(int classId) {
         try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
-            String sql="select distinct section.id,course_id,semester_id,name,total_capacity,left_capacity\n" +
-                    "from section join public.section_class sc on section.id = sc.section_id\n" +
-                    "where sc.id=?;";
+            String sql= """
+                    select distinct section.id,course_id,semester_id,name,total_capacity,left_capacity
+                    from section join public.section_class sc on section.id = sc.section_id
+                    where sc.id=?;""";
             PreparedStatement ps = con.prepareStatement(sql);
             ps.setInt(1,classId);
             ResultSet rs = ps.executeQuery();
@@ -323,14 +326,16 @@ public class MyCourseService implements CourseService {
     public List<Student> getEnrolledStudentsInSemester(String courseId, int semesterId) {
         ArrayList<Student> cs=new ArrayList<>();
         try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
-            String sql="select * from\n" +
-                    "(select *\n" +
-                    "from (select s.id\n" +
-                    "from course c join section s on c.id = s.course_id\n" +
-                    "join public.semester s2 on s2.id = s.semester_id \n" +
-                    "where c.id=? and s2.id=?) le join student_section on section_id=le.id) mid\n" +
-                    "join student stu on mid.student_id=stu.id join major m on stu.major_id = m.id\n" +
-                    "join department d on d.id = m.department_id;\n";
+            String sql= """
+                    select * from
+                    (select *
+                    from (select s.id
+                    from course c join section s on c.id = s.course_id
+                    join public.semester s2 on s2.id = s.semester_id\s
+                    where c.id=? and s2.id=?) le join student_section on section_id=le.id) mid
+                    join student stu on mid.student_id=stu.id join major m on stu.major_id = m.id
+                    join department d on d.id = m.department_id;
+                    """;
             PreparedStatement ps = con.prepareStatement(sql);
             ps.setString(1,courseId);
             ps.setInt(2,semesterId);

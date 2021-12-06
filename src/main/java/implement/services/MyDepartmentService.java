@@ -9,6 +9,7 @@ import implement.Util;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 @ParametersAreNonnullByDefault
@@ -31,10 +32,7 @@ public class MyDepartmentService implements DepartmentService {
     @Override
     public void removeDepartment(int departmentId) {
         String sql="delete from department where id=?";
-        try {
-            Util.update(con,sql,departmentId);
-        } catch (SQLException e) {
-            e.printStackTrace();
+        if(Util.update(con,sql,departmentId)==0){
             throw new EntityNotFoundException();
         }
     }
@@ -42,12 +40,18 @@ public class MyDepartmentService implements DepartmentService {
     @Override
     public List<Department> getAllDepartments() {
         String sql="select * from department";
-        return Util.query(Department.class,con,sql);
+        ArrayList<Department> res=Util.query(Department.class,con,sql);
+        if(res.isEmpty()){
+            throw new EntityNotFoundException();
+        }else {return res;}
     }
 
     @Override
     public Department getDepartment(int departmentId) {
         String sql="select * from department where id=?";
-        return Util.query(Department.class,con,sql,departmentId).get(0);
+        ArrayList<Department> res=Util.query(Department.class,con,sql,departmentId);
+        if(res.isEmpty()){
+            throw new EntityNotFoundException();
+        }else {return res.get(0);}
     }
 }
