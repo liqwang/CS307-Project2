@@ -9,6 +9,7 @@ import cn.edu.sustech.cs307.dto.prerequisite.Prerequisite;
 import cn.edu.sustech.cs307.exception.EntityNotFoundException;
 import cn.edu.sustech.cs307.exception.IntegrityViolationException;
 import cn.edu.sustech.cs307.service.CourseService;
+import implement.Util;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -236,6 +237,7 @@ public class MyCourseService implements CourseService {
         ArrayList<CourseSection> cs=new ArrayList<>();
         try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
             String sql="select * from section where course_id=? and semester_id=?";
+            //return Util.query(CourseSection.class,con,sql,courseId,semesterId);
             PreparedStatement ps = con.prepareStatement(sql);
             ps.setString(1,courseId);
             ps.setInt(2,semesterId);

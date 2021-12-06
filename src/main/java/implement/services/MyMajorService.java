@@ -76,8 +76,13 @@ public class MyMajorService implements MajorService {
             while (rs.next()){
                 int id=rs.getInt(1);
                 String name=rs.getString(2);
-                Department department=new Department(rs.getInt(3),rs.getString(4));
-                majors.add(new Major(id,name,department) );
+                Department department=new Department();
+                department.id=rs.getInt(3);department.name=rs.getString(4);
+                Major mj=new Major();
+                mj.id=id;
+                mj.name=name;
+                mj.department=department;
+                majors.add(mj);
             }
         } catch (SQLException throwables) {
             throwables.printStackTrace();
@@ -93,8 +98,14 @@ public class MyMajorService implements MajorService {
             PreparedStatement ps3 = con.prepareStatement(sql);
             ps3.setInt(1,majorId);
             ResultSet rs=ps3.executeQuery();
-            Department dp=new Department(rs.getInt(3),rs.getString(4));
-            return new Major(rs.getInt(1),rs.getString(2),dp);
+            Department dp=new Department();
+            dp.id=rs.getInt(3);
+            dp.name=rs.getString(4);
+            Major mj=new Major();
+            mj.id=rs.getInt(1);
+            mj.name=rs.getString(2);
+            mj.department=dp;
+            return mj;
         } catch (SQLException throwables) {
             throwables.printStackTrace();
             throw new EntityNotFoundException();
