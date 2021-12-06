@@ -30,8 +30,8 @@ public class MyUserService implements UserService {
 
     @Override
     public List<User> getAllUsers() {
+        ArrayList<User> users = new ArrayList<>();
         try(Connection con = SQLDataSource.getInstance().getSQLConnection()){
-            ArrayList<User> users = new ArrayList<>();
             String sql1 = "select * from student join major on student.major_id = major.id join department d on d.id = major.department_id";
             PreparedStatement ps1 = con.prepareStatement(sql1);
             ResultSet rs1 = ps1.executeQuery();
@@ -61,12 +61,10 @@ public class MyUserService implements UserService {
                 Instructor instructor = new Instructor(id, name);
                 users.add(instructor);
             }
-
-            return users;
         }catch(SQLException throwables){
             throwables.printStackTrace();
-            throw new EntityNotFoundException();
         }
+        return users;
     }
 
     @Override
