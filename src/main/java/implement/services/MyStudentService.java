@@ -314,12 +314,20 @@ public class MyStudentService implements StudentService {
     }
 
     @Override
-    public void dropCourse(int studentId, int sectionId) throws IllegalStateException, SQLException {
+    public void dropCourse(int studentId, int sectionId) throws IllegalStateException {
         //同时要修改表section中的left_capacity,调用updateLeftCapacity()
-        String sql="delete from student_section where student_id=? and section_id=?;";
-        if(Util.update(con,sql,studentId,sectionId)==1){
-          updateLeftCapacity(con,sectionId,false);
+        String sql0="select mark from student_section where student_id=? and section_id=?;";
+        if(Util.query(int.class,con,sql0,studentId,sectionId).get(0)!=-1){
+            String sql="delete from student_section where student_id=? and section_id=?;";
+            if(Util.update(con,sql,studentId,sectionId)==1){
+                try {
+                    updateLeftCapacity(con,sectionId,false);
+                } catch (SQLException throwables) {
+                    throwables.printStackTrace();
+                }
+            }
         }
+
     }
 
     @Override
