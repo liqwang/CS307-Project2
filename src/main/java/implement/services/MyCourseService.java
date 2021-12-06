@@ -280,7 +280,8 @@ public class MyCourseService implements CourseService {
             course.name = rs.getString(2);
             course.credit = rs.getInt(3);
             course.grading = grading;
-            return new Course(rs.getString(1),rs.getString(2),rs.getInt(3),rs.getInt(4),grading,rs.getString(6));
+            course.classHour = rs.getInt(6);
+            return course;
         } catch (SQLException throwables) {
             throwables.printStackTrace();
             throw new EntityNotFoundException();
@@ -364,10 +365,26 @@ public class MyCourseService implements CourseService {
             ps.setInt(2,semesterId);
             ResultSet rs = ps.executeQuery();
             ps.close();
-            Department dp=new Department(rs.getInt(7),rs.getString(8));
-            Major major=new Major(rs.getInt(2),rs.getString(6),dp);
+            Department dp=new Department();
+            dp.id = rs.getInt(7);
+            dp.name = rs.getString(8);
+            Major major=new Major();
+            major.id = rs.getInt(2);
+            major.name = rs.getString(6);
+            major.department = dp;
             while (rs.next()){
-                cs.add(new Student(rs.getInt(1),rs.getString(2),rs.getString(3),rs.getDate(5),major));
+                Student student = new Student();
+                student.id = rs.getInt(1);
+                String f_name = rs.getString(2);
+                String l_name = rs.getString(3);
+                String name;
+                if(f_name.charAt(0) >= 'A' && f_name.charAt(0) <= 'Z')
+                    name = f_name + " " + l_name;
+                else name = f_name + l_name;
+                student.fullName = name;
+                student.enrolledDate = rs.getDate(4);
+                student.major = major;
+                cs.add(student);
             }
             return cs;
         } catch (SQLException throwables) {
