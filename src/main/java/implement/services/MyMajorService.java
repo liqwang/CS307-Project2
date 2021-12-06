@@ -109,7 +109,7 @@ public class MyMajorService implements MajorService {
 
     @Override
     public void addMajorElectiveCourse(int majorId, String courseId) {
-        String sql = "insert into major_course values (?, ?, 1)";
+        String sql = "insert into major_course values (?, ?, 0)";
         Util.update(con, sql, majorId, courseId);
     }
 }
