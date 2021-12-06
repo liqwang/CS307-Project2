@@ -40,10 +40,19 @@ public class MyUserService implements UserService {
                 String f_name = rs1.getString(3);
                 String l_name = rs1.getString(4);
                 Date date = rs1.getDate(5);
-                Department department = new Department(rs1.getInt(9), rs1.getString(10));
-                Major major = new Major(rs1.getInt(6), rs1.getString(7), department);
-                Student student = new Student(id, f_name, l_name, date, major);
-                users.add(student);
+                Department dep = new Department();
+                dep.id=rs1.getInt(9);
+                dep.name=rs1.getString(10);
+                Major maj = new Major();
+                maj.id=rs1.getInt(6);
+                maj.name=rs1.getString(7);
+                maj.department=dep;
+                Student stu = new Student();
+                stu.id=id;
+                stu.fullName=f_name;
+                stu.enrolledDate=date;
+                stu.major=maj;
+                users.add(stu);
             }
 
             String sql2 = "select * from instructor";
@@ -58,8 +67,10 @@ public class MyUserService implements UserService {
                     name = f_name + " " + l_name;
                 }
                 else name = f_name + l_name;
-                Instructor instructor = new Instructor(id, name);
-                users.add(instructor);
+                Instructor ins = new Instructor();
+                ins.id=id;
+                ins.fullName=name;
+                users.add(ins);
             }
         }catch(SQLException throwables){
             throwables.printStackTrace();
@@ -83,10 +94,19 @@ public class MyUserService implements UserService {
                 String f_name = rs1.getString(3);
                 String l_name = rs1.getString(4);
                 Date date = rs1.getDate(5);
-                Department department = new Department(rs1.getInt(9), rs1.getString(10));
-                Major major = new Major(rs1.getInt(6), rs1.getString(7), department);
-                user = new Student(id, f_name, l_name, date, major);
-                return user;
+                Department dep = new Department();
+                dep.id=rs1.getInt(9);
+                dep.name=rs1.getString(10);
+                Major maj = new Major();
+                maj.id=rs1.getInt(6);
+                maj.name=rs1.getString(7);
+                maj.department=dep;
+                Student stu = new Student();
+                stu.id=id;
+                stu.fullName=f_name;
+                stu.major=maj;
+                stu.enrolledDate=date;
+                return stu;
             }
 
             else if(rs2.next()){
@@ -98,8 +118,10 @@ public class MyUserService implements UserService {
                     name = f_name + " " + l_name;
                 }
                 else name = f_name + l_name;
-                user = new Instructor(id, name);
-                return user;
+                Instructor ins = new Instructor();
+                ins.id=id;
+                ins.fullName=name;
+                return ins;
             }
 
             else throw new EntityNotFoundException();

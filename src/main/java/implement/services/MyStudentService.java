@@ -301,9 +301,14 @@ public class MyStudentService implements StudentService {
                 }
             }
             CourseSectionClass clazz = new CourseSectionClass();
-            clazz
-            res.add(new CourseSectionClass(
-            0,null,dayOfWeek,weekList,null,classBegin,classEnd,null));
+            clazz.id=0;
+            clazz.instructor=null;
+            clazz.dayOfWeek=dayOfWeek;
+            clazz.weekList=weekList;
+            clazz.classBegin=classBegin;
+            clazz.classEnd=classEnd;
+            clazz.location=null;
+            res.add(clazz);
         }
         return res;
     }
@@ -450,25 +455,32 @@ public class MyStudentService implements StudentService {
     @Override
     public Major getStudentMajor(int studentId) {
         try{
-            String sql = "select m.id, m.name, m.department_id\n" +
-                    "from student join major m on m.id = student.major_id\n" +
-                    "where student.id = ?";
+            String sql = """
+                    select m.id, m.name, m.department_id
+                    from student join major m on m.id = student.major_id
+                    where student.id = ?""";
             PreparedStatement ps = con.prepareStatement(sql);
             ps.setInt(1, studentId);
             ResultSet rs = ps.executeQuery();
             int mid = rs.getInt(1);
             String name = rs.getString(2);
             int did = rs.getInt(3);
-            String sql2 = "select *\n" +
-                    "from department\n" +
-                    "where id = ?";
+            String sql2 = """
+                    select *
+                    from department
+                    where id = ?""";
             PreparedStatement ps2 = con.prepareStatement(sql2);
             ps2.setInt(1, did);
             ResultSet rs2 = ps2.executeQuery();
             String d_name = rs2.getString(2);
-            Department department = new Department(did, d_name);
-            Major major = new Major(mid, name, department);
-            return major;
+            Department dep = new Department();
+            dep.id=did;
+            dep.name=d_name;
+            Major maj = new Major();
+            maj.id=mid;
+            maj.name=name;
+            maj.department=dep;
+            return maj;
         }catch(SQLException throwables){
             throwables.printStackTrace();
             throw new EntityNotFoundException();
