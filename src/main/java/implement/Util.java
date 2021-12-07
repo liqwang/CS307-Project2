@@ -2,9 +2,7 @@ package implement;
 
 import cn.edu.sustech.cs307.exception.IntegrityViolationException;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.sql.*;
 import java.time.DayOfWeek;
 import java.util.ArrayList;
@@ -62,10 +60,9 @@ public class Util {
             ResultSet rs=ps.executeQuery();
             ResultSetMetaData rsmd = rs.getMetaData();
             int col = rsmd.getColumnCount();
-            Constructor<T> defConstr = clazz.getConstructor();
             ArrayList<T> list = new ArrayList<>();
             while(rs.next()){
-                T t = defConstr.newInstance();
+                T t = clazz.newInstance();
                 for (int i = 0; i < col; i++) {
                     Object val;
                     if(rsmd.getColumnName(i+1).equals("day_of_week")) {
@@ -80,7 +77,7 @@ public class Util {
                 list.add(t);
             }
             return list;
-        } catch (NoSuchFieldException|NoSuchMethodException|InstantiationException|IllegalAccessException|InvocationTargetException|SQLException e) {
+        } catch (NoSuchFieldException|InstantiationException|IllegalAccessException|SQLException e) {
             e.printStackTrace();
             System.exit(1);
             return null;

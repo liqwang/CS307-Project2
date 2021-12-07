@@ -190,11 +190,14 @@ public final class ProjectJudge {
                 || !userService.getAllUsers().isEmpty()) {
             System.out.println("Database is not empty! Trying to truncate all your tables.");
             try {
-                courseService.getAllCourses().parallelStream().forEach(it -> courseService.removeCourse(it.id));
-                departmentService.getAllDepartments().parallelStream()
-                        .forEach(it -> departmentService.removeDepartment(it.id));
-                semesterService.getAllSemesters().parallelStream().forEach(it -> semesterService.removeSemester(it.id));
-                userService.getAllUsers().parallelStream().forEach(it -> userService.removeUser(it.id));
+                courseService.getAllCourses().parallelStream().
+                        forEach(it -> courseService.removeCourse(it.id));
+                departmentService.getAllDepartments().parallelStream().
+                        forEach(it -> departmentService.removeDepartment(it.id));
+                semesterService.getAllSemesters().parallelStream().
+                        forEach(it -> semesterService.removeSemester(it.id));
+                userService.getAllUsers().parallelStream().
+                        forEach(it -> userService.removeUser(it.id));
             } catch (Throwable t) {
                 System.out.println("Failed to truncate database.");
                 t.printStackTrace();

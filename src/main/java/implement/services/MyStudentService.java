@@ -19,7 +19,7 @@ import java.util.stream.Stream;
 
 @ParametersAreNonnullByDefault
 public class MyStudentService implements StudentService {
-    Connection con;
+    public Connection con;
 
     {
         try {
@@ -53,16 +53,14 @@ public class MyStudentService implements StudentService {
     @Override
     public List<CourseSearchEntry> searchCourse(int studentId, int semesterId, @Nullable String searchCid, @Nullable String searchName, @Nullable String searchInstructor, @Nullable DayOfWeek searchDayOfWeek, @Nullable Short searchClassTime, @Nullable List<String> searchClassLocations, CourseType searchCourseType, boolean ignoreFull, boolean ignoreConflict, boolean ignorePassed, boolean ignoreMissingPrerequisites, int pageSize, int pageIndex) {
         String sql= """
-                select student_id,
-                       semester_id,
-                       left_capacity,
-                       course_id,
-                       c.name||'['||sec.name||']' full_name,
-                       first_name,last_name,
-                       day_of_week,
-                       begin_time,end_time,
+                select left_capacity leftCapacity,
+                       course_id courseId,
+                       c.name||'['||sec.name||']' fullName,
+                       first_name firstName,last_name lastName,
+                       day_of_week dayOfWeek,
+                       begin_time beginTime,end_time endTime,
                        location,
-                       is_pf
+                       is_pf grading
                 from student_section ss
                      join section sec on ss.section_id=sec.id
                                       and student_id=?
@@ -123,6 +121,7 @@ public class MyStudentService implements StudentService {
                 infos=infos.filter(info -> filCids.contains(info.courseId));
             }
         }
+        //TODO: 完成searchCourse()
         if(ignoreConflict){
 
         }
@@ -130,32 +129,18 @@ public class MyStudentService implements StudentService {
         ArrayList<CourseSearchEntry> res = new ArrayList<>();
         return null;
     }
+    /**
+     * searchCourse()的内部类
+     */
     public class Info{
-        public int studentId,
-                   semesterId,
-                   leftCapacity;
+        public int leftCapacity;
         public String courseId,
-                      fullName,
-                      firstName,lastName;
+                fullName,
+                firstName,lastName;
         public DayOfWeek dayOfWeek;
         public short beginTime,endTime;
         public String location;
         public Course.CourseGrading grading;
-
-        public Info(int studentId, int semesterId, int leftCapacity, String courseId, String fullName, String firstName, String lastName, DayOfWeek dayOfWeek, short beginTime, short endTime, String location, Course.CourseGrading grading) {
-            this.studentId = studentId;
-            this.semesterId = semesterId;
-            this.leftCapacity = leftCapacity;
-            this.courseId = courseId;
-            this.fullName = fullName;
-            this.firstName = firstName;
-            this.lastName = lastName;
-            this.dayOfWeek = dayOfWeek;
-            this.beginTime = beginTime;
-            this.endTime = endTime;
-            this.location = location;
-            this.grading = grading;
-        }
     }
 
     @Override
