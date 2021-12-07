@@ -17,7 +17,7 @@ public class MyFactory extends ServiceFactory {
         registerService(StudentService.class,new MyStudentService());
         registerService(UserService.class,new MyUserService());
     }
-    //TODO: 效率优化：searchCourse()中的并行流
+    //TODO: 效率优化：searchCourse()中的并行流?
     //TODO: 效率优化：Bitmap算法?
     @Override
     public List<String> getUIDs() {

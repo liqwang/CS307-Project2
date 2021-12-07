@@ -4,7 +4,7 @@ import java.util.Objects;
 
 public class CourseSection {
     /**
-     *For example it can represent the id of section "No.1 Chinese class of database principle"
+     *For example, it can represent the id of section "No.1 Chinese class of database principle"
      */
     public int id;
     /**

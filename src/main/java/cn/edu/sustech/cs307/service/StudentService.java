@@ -95,7 +95,7 @@ public interface StudentService {
      * Search available courses (' sections) for the specified student in the semester with extra conditions.
      * The result should be first sorted by course ID, and then sorted by course full name (course.name[section.name]).
      * Ignore all course sections that have no sub-classes.
-     * Note: All ignore* arguments are about whether or not the result should ignore such cases.
+     * Note: All ignore* arguments are about whether the result should ignore such cases.
      * i.e. when ignoreFull is true, the result should filter out all sections that are full.
      *
      * @param studentId
@@ -111,8 +111,8 @@ public interface StudentService {
      * @param searchClassTime            search class time. Matches *any* class in the section contains the search class time.
      * @param searchClassLocations       search class locations. Matches *any* class in the section contains *any* location from the search class locations.
      * @param searchCourseType           search course type. See {@link CourseType}
-     * @param ignoreFull                 whether or not to ignore full course sections.
-     * @param ignoreConflict             whether or not to ignore course or time conflicting course sections.
+     * @param ignoreFull                 whether to ignore full course sections.
+     * @param ignoreConflict             whether to ignore course or time conflicting course sections.
      *                                   Note that a section is both course and time conflicting with itself.
      *                                   See {@link CourseSearchEntry#conflictCourseNames}
      * @param ignorePassed               whether or not to ignore the student's passed courses.

@@ -85,7 +85,8 @@ public class Util {
     }
 
     /**
-     * 通用的查询单一属性的方法,如String,int,DayOfWeek
+     * 通用的查询单一属性的方法,如String, int, DayOfWeek
+     * <p>不需要修改列的别名
      */
     public static <T> ArrayList<T> querySingle(Connection con,String sql,Object... param){
         try(PreparedStatement ps=con.prepareStatement(sql)){
