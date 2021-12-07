@@ -52,15 +52,14 @@ public class Util {
     }
 
     /**
-     * 通用的查询操作，注意：**列的别名必须与属性名一致**
+     * 通用的查询具体类的方法，**别名必须与属性名一致**
      */
     public static <T> ArrayList<T> query(Class<T> clazz,Connection con,String sql,Object... param){
         try(PreparedStatement ps=con.prepareStatement(sql)){
             for (int i = 0; i < param.length; i++) {
                 ps.setObject(i+1,param[i]);
             }
-            ResultSet rs;
-            rs = ps.executeQuery();
+            ResultSet rs=ps.executeQuery();
             ResultSetMetaData rsmd = rs.getMetaData();
             int col = rsmd.getColumnCount();
             Constructor<T> defConstr = clazz.getConstructor();
@@ -80,9 +79,36 @@ public class Util {
                 }
                 list.add(t);
             }
-            rs.close();
             return list;
         } catch (NoSuchFieldException|NoSuchMethodException|InstantiationException|IllegalAccessException|InvocationTargetException|SQLException e) {
+            e.printStackTrace();
+            System.exit(1);
+            return null;
+        }
+    }
+
+    /**
+     * 通用的查询单一属性的方法,如String,int,DayOfWeek
+     */
+    public static <T> ArrayList<T> querySingle(Connection con,String sql,Object... param){
+        try(PreparedStatement ps=con.prepareStatement(sql)){
+            for (int i = 0; i < param.length; i++) {
+                ps.setObject(i+1,param[i]);
+            }
+            ResultSet rs=ps.executeQuery();
+            ResultSetMetaData rsmd = rs.getMetaData();
+            ArrayList<T> list = new ArrayList<>();
+            while(rs.next()) {
+                Object val;
+                if (rsmd.getColumnName(1).equals("day_of_week")) {
+                    val = DayOfWeek.of(rs.getInt(1));
+                } else {
+                    val = rs.getObject(1);
+                }
+                list.add((T)val);
+            }
+            return list;
+        }catch(SQLException e){
             e.printStackTrace();
             System.exit(1);
             return null;

@@ -158,23 +158,21 @@ public class MyStudentService implements StudentService {
         }
     }
 
-    //TODO: 修复rs中columnIndex的bug
     @Override
     public EnrollResult enrollCourse(int studentId, int sectionId) {
         //2&3&5.1这三种情况要区分开
-        try(Connection con= SQLDataSource.getInstance().getSQLConnection()) {
+        try{
             //1.班级不存在
             String sql1 = "select left_capacity from section where id=?";
-            PreparedStatement ps = con.prepareStatement(sql1);
-            ps.setInt(1, sectionId);
-            ResultSet capacity=ps.executeQuery();
-            if(!capacity.next()){return EnrollResult.COURSE_NOT_FOUND;}
+            ArrayList<Integer> capacity = Util.querySingle(con, sql1, sectionId);
+            if(capacity.isEmpty()){
+                return EnrollResult.COURSE_NOT_FOUND;
+            }
             //2.已经选了这个班级
             String sql2="select mark from student_section where section_id=? and student_id=?";
-            ps = con.prepareStatement(sql2);
-            ps.setInt(1,sectionId);
-            ps.setInt(2,studentId);
-            if(ps.executeQuery().next()){return EnrollResult.ALREADY_ENROLLED;}
+            if(!Util.querySingle(con, sql2, sectionId, studentId).isEmpty()){
+                return EnrollResult.ALREADY_ENROLLED;
+            }
             //3.已经通过了这门课
             String sql3= """
                     select course_id
@@ -187,16 +185,12 @@ public class MyStudentService implements StudentService {
                              from section
                              where id=?
                          )""";//找出之前通过的这门课的courseId，如果不为空，则已通过
-            ps=con.prepareStatement(sql3);
-            ps.setInt(1,studentId);
-            ps.setInt(2,sectionId);
-            if(ps.executeQuery().next()){return EnrollResult.ALREADY_PASSED;}
+            if(!Util.querySingle(con, sql3, studentId, sectionId).isEmpty()){
+                return EnrollResult.ALREADY_PASSED;
+            }
             //4.先修课不满足
             String sql4="select course_id from section where id=?";
-            ps = con.prepareStatement(sql4);
-            ps.setInt(1,sectionId);
-            ResultSet rs = ps.executeQuery();
-            String courseId=rs.getString(2);
+            String courseId=(String)Util.querySingle(con,sql4,sectionId).get(0);
             if(!passedPrerequisitesForCourse(studentId,courseId)){
                 return EnrollResult.PREREQUISITES_NOT_FULFILLED;
             }
@@ -213,12 +207,15 @@ public class MyStudentService implements StudentService {
                              from section
                              where id=?
                          )""";//本学期所选的这门课的courseId，如果不为空，则已选过这门课
-            ps = con.prepareStatement(sql5);
-            if(ps.executeQuery().next()){return EnrollResult.COURSE_CONFLICT_FOUND;}
+            if(!Util.querySingle(con,sql5,studentId,sectionId).isEmpty()){
+                return EnrollResult.COURSE_CONFLICT_FOUND;
+            }
             //5.2时间冲突
             //5.2.1获取该学生本学期的所有class中和该sectionId在同一DayOfWeek的classes: sameDayClasses
             String sql6= """
-                    select day_of_week,class_begin,class_end,week_list
+                    select day_of_week dayOfWeek,
+                           class_begin classBegin,class_end classEnd,
+                           week_list weekList
                     from student_section
                          join section on section_id=section.id
                                       and student_id=?
@@ -233,21 +230,19 @@ public class MyStudentService implements StudentService {
                                                     from section_class
                                                     where section_id=?
                                                 )""";
-            ps=con.prepareStatement(sql6);
-            ps.setInt(1,studentId);
-            ps.setInt(2,sectionId);
-            ps.setInt(3,sectionId);
-            rs = ps.executeQuery();
-            List<CourseSectionClass> sameDayClasses = getClassList(rs);
+            //TODO: query中，Array→Set<Short>有没有bug?
+            ArrayList<CourseSectionClass> sameDayClasses =
+                    Util.query(CourseSectionClass.class,con,sql6,studentId,sectionId,sectionId);
             //5.2.2获取该sectionId的sectionClass: selectClasses
             String sql7= """
-                    select day_of_week,class_begin,class_end,week_list
+                    select day_of_week dayOfWeek,
+                           class_begin classBegin,class_end classEnd,
+                           week_list weekList
                     from section_class
                     where section_id=?;""";
-            ps=con.prepareStatement(sql7);
-            ps.setInt(1,sectionId);
-            rs=ps.executeQuery();
-            ArrayList<CourseSectionClass> selectClasses = getClassList(rs);
+            //TODO: query中，Array→Set<Short>有没有bug?
+            ArrayList<CourseSectionClass> selectClasses =
+                    Util.query(CourseSectionClass.class,con,sql7,sectionId);
             //5.2.3比较selectClasses和sameDayClasses,判断时间是否冲突(类似哈希思想)
             for (CourseSectionClass selectClass : selectClasses) {
                 for (CourseSectionClass sameDayClass : sameDayClasses) {
@@ -265,19 +260,15 @@ public class MyStudentService implements StudentService {
                 }
             }
             //6.班级满了
-            if(capacity.getInt(1)==0){
+            if(capacity.get(0)==0){
                 return EnrollResult.COURSE_IS_FULL;
             }
             //7.选课成功
             //7.1添加一条student_section关系
             String sql8="insert into student_section values (?,?,-1)";//本学期新选的课，mark为-1
-            ps=con.prepareStatement(sql8);
-            ps.setInt(1,studentId);
-            ps.setInt(2,sectionId);
-            ps.executeUpdate();
+            Util.update(con,sql8,studentId,sectionId);
             //7.2表section中的left_capacity++
             updateLeftCapacity(con,sectionId,true);
-            ps.close();
             return EnrollResult.SUCCESS;
         } catch (SQLException e) {
             e.printStackTrace();
