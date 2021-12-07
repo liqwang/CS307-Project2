@@ -1,9 +1,9 @@
 package implement;
 
-import cn.edu.sustech.cs307.dto.Course;
 import cn.edu.sustech.cs307.exception.IntegrityViolationException;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.*;
 import java.time.DayOfWeek;
@@ -52,7 +52,7 @@ public class Util {
     }
 
     /**
-     * 通用的查询操作，注意：参数顺序要按照构造器的参数顺序
+     * 通用的查询操作，注意：**列的别名必须与属性名一致**
      */
     public static <T> ArrayList<T> query(Class<T> clazz,Connection con,String sql,Object... param){
         try(PreparedStatement ps=con.prepareStatement(sql)){
@@ -63,23 +63,26 @@ public class Util {
             rs = ps.executeQuery();
             ResultSetMetaData rsmd = rs.getMetaData();
             int col = rsmd.getColumnCount();
-            Constructor<T> constr = (Constructor<T>)clazz.getDeclaredConstructors()[0];
+            Constructor<T> defConstr = clazz.getConstructor();
             ArrayList<T> list = new ArrayList<>();
             while(rs.next()){
-                ArrayList<Object> consParams = new ArrayList<>();
+                T t = defConstr.newInstance();
                 for (int i = 0; i < col; i++) {
+                    Object val;
                     if(rsmd.getColumnName(i+1).equals("day_of_week")) {
-                        consParams.add(DayOfWeek.of(rs.getInt(i + 1)));
-                    }else if(rsmd.getColumnName(i+1).equals("is_pf")){
-                        consParams.add(rs.getBoolean(i+1)?
-                                Course.CourseGrading.PASS_OR_FAIL:Course.CourseGrading.HUNDRED_MARK_SCORE);
-                    }else {consParams.add(rs.getObject(i+1));}
+                        val=DayOfWeek.of(rs.getInt(i+1));
+                    }else {
+                        val = rs.getObject(i+1);
+                    }
+                    String fieldName = rsmd.getColumnLabel(i+1);
+                    Field field = clazz.getDeclaredField(fieldName);
+                    field.set(t,val);
                 }
-                list.add(constr.newInstance(consParams));
+                list.add(t);
             }
             rs.close();
             return list;
-        } catch (InstantiationException|IllegalAccessException|InvocationTargetException|SQLException e) {
+        } catch (NoSuchFieldException|NoSuchMethodException|InstantiationException|IllegalAccessException|InvocationTargetException|SQLException e) {
             e.printStackTrace();
             System.exit(1);
             return null;

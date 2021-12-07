@@ -36,6 +36,7 @@ public class MyMajorService implements MajorService {
             ps.setInt(2,departmentId);
             ps.executeUpdate();
             ResultSet rs=ps.getGeneratedKeys();
+            rs.next();
             return rs.getInt(1);
         }catch (SQLException throwables) {
             throwables.printStackTrace();
@@ -111,15 +112,16 @@ public class MyMajorService implements MajorService {
         }
     }
 
+    //TODO:完成这两个方法
     @Override
     public void addMajorCompulsoryCourse(int majorId, String courseId) { //这两个没看懂
-        String sql = "insert into major_course values (?, ?, 1)";
+        String sql = "insert into major_course values (?, ?, true)";
         Util.update(con, sql, majorId, courseId);
     }
 
     @Override
     public void addMajorElectiveCourse(int majorId, String courseId) {
-        String sql = "insert into major_course values (?, ?, 0)";
+        String sql = "insert into major_course values (?, ?, false)";
         Util.update(con, sql, majorId, courseId);
     }
 }

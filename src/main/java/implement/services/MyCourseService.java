@@ -72,6 +72,7 @@ public class MyCourseService implements CourseService {
             ps.setInt(5,totalCapacity);//新插入 剩余名额为满的
             ps.executeUpdate();
             ResultSet rs= ps.getGeneratedKeys();
+            rs.next();
             return rs.getInt(1);
         }catch (SQLException throwables) {
             throwables.printStackTrace();
@@ -83,17 +84,17 @@ public class MyCourseService implements CourseService {
     public int addCourseSectionClass(int sectionId, int instructorId, DayOfWeek dayOfWeek, Set<Short> weekList, short classStart, short classEnd, String location) {
         try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
             String sql="insert into section_class(section_id, instructor_id, day_of_week, class_begin, class_end, location, week_list) values (?,?,?,?,?,?,?)";
-            //PreparedStatement ps=con.prepareStatement(sql,PreparedStatement.RETURN_GENERATED_KEYS);
-            PreparedStatement ps = con.prepareStatement(sql);//这样写会不会有bug?
+            PreparedStatement ps=con.prepareStatement(sql,PreparedStatement.RETURN_GENERATED_KEYS);
             ps.setInt(1,sectionId);
             ps.setInt(2,instructorId);
             ps.setInt(3,dayOfWeek.getValue());
             ps.setInt(4,classStart);
             ps.setInt(5,classEnd);
             ps.setString(6,location);
-            ps.setArray(7, (Array)weekList);
+            ps.setArray(7,con.createArrayOf("smallint", weekList.toArray()));
             ps.executeUpdate();
             ResultSet rs = ps.getGeneratedKeys();
+            rs.next();
             return rs.getInt(1);
         } catch (SQLException throwables) {
             throwables.printStackTrace();
