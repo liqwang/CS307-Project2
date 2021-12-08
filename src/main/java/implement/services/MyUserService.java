@@ -60,16 +60,16 @@ public class MyUserService implements UserService {
             ResultSet rs2 = ps2.executeQuery();
             while(rs2.next()){
                 int id = rs2.getInt(1);
-                String f_name = rs2.getString(2);
-                String l_name = rs2.getString(3);
-                String name;
-                if(f_name.charAt(0) >= 'A' && f_name.charAt(0) <= 'Z'){
-                    name = f_name + " " + l_name;
+                String firstName = rs2.getString(2);
+                String lastName = rs2.getString(3);
+                String fullName;
+                if(firstName.charAt(0) >= 'A' && firstName.charAt(0) <= 'Z'){
+                    fullName = firstName + " " + lastName;
                 }
-                else name = f_name + l_name;
+                else fullName = firstName + lastName;
                 Instructor ins = new Instructor();
                 ins.id=id;
-                ins.fullName=name;
+                ins.fullName=fullName;
                 users.add(ins);
             }
         }catch(SQLException throwables){

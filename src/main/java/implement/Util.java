@@ -6,6 +6,8 @@ import java.lang.reflect.Field;
 import java.sql.*;
 import java.time.DayOfWeek;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 
 public class Util {
     /**
@@ -65,8 +67,11 @@ public class Util {
                 T t = clazz.newInstance();
                 for (int i = 0; i < col; i++) {
                     Object val;
+                    if(rsmd.getColumnName(i+1).equals("week_list")){
+                        val= new HashSet<>(List.of((Short[])rs.getArray(i+1).getArray()));
+                    }
                     if(rsmd.getColumnName(i+1).equals("day_of_week")) {
-                        val=DayOfWeek.of(rs.getInt(i+1));
+                        val= DayOfWeek.of(rs.getInt(i+1));
                     }else {
                         val = rs.getObject(i+1);
                     }
