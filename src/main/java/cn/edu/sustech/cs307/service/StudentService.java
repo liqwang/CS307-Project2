@@ -81,7 +81,7 @@ public interface StudentService {
 
     /**
      * Add one student according to following parameters.
-     * If some of parameters are invalid, throw {@link cn.edu.sustech.cs307.exception.IntegrityViolationException}
+     * If some parameters are invalid, throw {@link cn.edu.sustech.cs307.exception.IntegrityViolationException}
      *
      * @param userId
      * @param majorId
@@ -98,8 +98,6 @@ public interface StudentService {
      * Note: All ignore* arguments are about whether the result should ignore such cases.
      * i.e. when ignoreFull is true, the result should filter out all sections that are full.
      *
-     * @param studentId
-     * @param semesterId
      * @param searchCid                  search course id. Rule: searchCid in course.id
      * @param searchName                 search course name. Rule: searchName in "course.name[section.name]"
      * @param searchInstructor           search instructor name.
@@ -115,8 +113,8 @@ public interface StudentService {
      * @param ignoreConflict             whether to ignore course or time conflicting course sections.
      *                                   Note that a section is both course and time conflicting with itself.
      *                                   See {@link CourseSearchEntry#conflictCourseNames}
-     * @param ignorePassed               whether or not to ignore the student's passed courses.
-     * @param ignoreMissingPrerequisites whether or not to ignore courses with missing prerequisites.
+     * @param ignorePassed               whether to ignore the student's passed courses.
+     * @param ignoreMissingPrerequisites whether to ignore courses with missing prerequisites.
      * @param pageSize                   the page size, effectively `limit pageSize`.
      *                                   It is the number of {@link CourseSearchEntry}
      * @param pageIndex                  the page index, effectively `offset pageIndex * pageSize`.

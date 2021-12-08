@@ -85,32 +85,50 @@ public class MyStudentService implements StudentService {
         if(ignoreFull){
             infos=infos.filter(info -> info.leftCapacity>0);
         }
-        //TODO: 2.处理4个正向筛选条件(和细分的class有关的筛选条件)
-        if(!(searchInstructor==null && searchDayOfWeek==null && searchClassTime==null && searchClassLocations==null)){
-            /*Motivation of filteredSecIds:
+        //2.处理4个正向筛选条件(和细分的class有关的筛选条件)
+        if (searchInstructor != null) {
+            /*Motivation of filteredSIds:
             1个section有2个class, 只有一个class被筛除(如筛选instructor时),
             正确结果应该是该section被筛除，但是只筛选infos无法做到这一点
              */
-            HashSet<Integer> filteredSecIds = new HashSet<>();
-            //2.1层层生成filteredSecIds
-            if (searchInstructor != null) {
-                /*infos.
-                infos = infos.forEach(info -> (info.firstName + info.lastName).startsWith(searchInstructor) ||
-                                    (info.firstName + ' ' + info.lastName).startsWith(searchInstructor) ||
-                                    info.firstName.startsWith(searchInstructor) ||
-                                    info.lastName.startsWith(searchInstructor));*/
-            }
-            if (searchDayOfWeek != null) {
-                infos = infos.filter(info -> info.dayOfWeek == searchDayOfWeek);
-            }
-            if (searchClassTime != null) {
-                infos = infos.filter(info -> info.classBegin <= searchClassTime &&
-                        info.classEnd >= searchClassTime);
-            }
-            if (searchClassLocations != null) {
-                infos = infos.filter(info -> searchClassLocations.contains(info.location));
-            }
-            //2.2利用filteredSecIds筛选infos
+            HashSet<Integer> filteredSids = new HashSet<>();
+            infos.forEach(info -> {
+                if ((info.firstName + info.lastName).startsWith(searchInstructor) ||
+                   (info.firstName + ' ' + info.lastName).startsWith(searchInstructor) ||
+                   info.firstName.startsWith(searchInstructor) ||
+                   info.lastName.startsWith(searchInstructor)) {
+                    filteredSids.add(info.sectionId);
+                }
+            });
+            infos = infos.filter(info -> filteredSids.contains(info.sectionId));
+        }
+        if (searchDayOfWeek != null) {
+            HashSet<Integer> filteredSids = new HashSet<>();
+            infos.forEach(info -> {
+                if(info.dayOfWeek == searchDayOfWeek){
+                    filteredSids.add(info.sectionId);
+                }
+            });
+            infos=infos.filter(info -> filteredSids.contains(info.sectionId));
+        }
+        if (searchClassTime != null) {
+            HashSet<Integer> filteredSids = new HashSet<>();
+            infos.forEach(info -> {
+                if(info.classBegin <= searchClassTime &&
+                   info.classEnd >= searchClassTime){
+                    filteredSids.add(info.sectionId);
+                }
+            });
+            infos = infos.filter(info -> filteredSids.contains(info.sectionId));
+        }
+        if (searchClassLocations != null) {
+            HashSet<Integer> filteredSids = new HashSet<>();
+            infos.forEach(info -> {
+                if(searchClassLocations.contains(info.location)){
+                    filteredSids.add(info.sectionId);
+                }
+            });
+            infos = infos.filter(info -> filteredSids.contains(info.sectionId));
         }
         //----------CourseType不筛选了，摆-------------
         //3.筛选ignorePassed & ignoreMissingPrerequisites
@@ -149,6 +167,16 @@ public class MyStudentService implements StudentService {
         //4.2将流infos转为List
         List<Info> information = infos.collect(Collectors.toList());
         //4.3生成每个entry对象
+        //4.3.0获取该学生本学期已选的课的信息: selectedInfos(被4.3.3使用)
+        sql= """
+                select course_id courseId,
+                       c.name||'['||s.name||']' fullName
+                from student_section
+                     join section s on s.id=section_id
+                                   and semester_id=?
+                                   and student_id=?
+                     join course c on c.id=course_id""";
+        ArrayList<selectedInfo> selectedInfos = Util.query(selectedInfo.class,con,sql,semesterId,studentId);
         for (Integer sectionId : sectionIds) {
             CourseSearchEntry entry = new CourseSearchEntry();
             //hasGenerate标记第一次找到该sectionId，因为course和section只需生成一次
@@ -168,9 +196,17 @@ public class MyStudentService implements StudentService {
                             from section
                             where id=?""";
                         entry.section=Util.query(CourseSection.class,con,sql,sectionId).get(0);
-                        //TODO: 4.3.3准备conflictCourseNames
+                        //4.3.3准备conflictCourseNames
+                        ArrayList<String> conflictCourseNames = new ArrayList<>();
                         //4.3.3.1课程冲突
-                        //4.3.3.2时间冲突
+                        for (selectedInfo it : selectedInfos) {
+                            if(it.courseId.equals(entry.course.id)){
+                                conflictCourseNames.add(it.fullName);
+                                break;
+                            }
+                        }
+                        //4.3.3.2-------------时间冲突，摆---------------
+                        entry.conflictCourseNames=conflictCourseNames;
                         hasGenerate=true;
                     }
                     //4.3.4准备sectionClasses
@@ -178,18 +214,13 @@ public class MyStudentService implements StudentService {
                     //4.3.4.1准备instructor
                     Instructor instructor = new Instructor();
                     if ((Pattern.compile("[a-zA-Z]").matcher(info.firstName).find() || info.firstName.equals(" ")) &&
-                            (Pattern.compile("[a-zA-Z]").matcher(info.lastName).find() || info.lastName.equals(" "))) {
+                        (Pattern.compile("[a-zA-Z]").matcher(info.lastName).find() || info.lastName.equals(" "))) {
                         instructor.fullName = info.firstName + " " + info.lastName;
                     } else {instructor.fullName = info.firstName + info.lastName;}
                     instructor.id=info.instructorId;
                     clazz.instructor=instructor;
-                    //4.3.4.2准备weekList
-                    try {
-                        clazz.weekList= new HashSet<>(List.of((Short[])info.weekList.getArray()));
-                    } catch (SQLException e) {
-                        e.printStackTrace();
-                    }
-                    //4.3.4.3准备其余属性
+                    //4.3.4.2准备其余属性
+                    clazz.weekList=info.weekList;
                     clazz.id=info.classId;
                     clazz.dayOfWeek=info.dayOfWeek;
                     clazz.classBegin=info.classBegin;
@@ -200,30 +231,23 @@ public class MyStudentService implements StudentService {
             }
             entries.add(entry);
         }
+        //5.筛选ignoreConflict
         if(ignoreConflict){
-            //1.课程冲突
-            //1.1获取该学生本学期已选的courseId: selectedCids
-            sql= """
-                    select course_id
-                    from student_section
-                         join section on id=section_id
-                                     and semester_id=?
-                                     and student_id=?""";
-            ArrayList<String> selectedCids = Util.querySingle(con, sql, semesterId, studentId);
-            infos=infos.filter(info -> !selectedCids.contains(info.courseId));
-            //2.时间冲突
+            entries=(ArrayList<CourseSearchEntry>)
+                entries.stream().filter(it -> it.conflictCourseNames.isEmpty()).collect(Collectors.toList());
         }
+        //6.按接口要求排序:courseId→courseFullName
+        //TODO: 排序
         return entries;
     }
-
     /**
      * searchCourse()的内部类
      */
     public class Info{
         public int leftCapacity;
         public String courseId,
-                fullName,
-                firstName,lastName;
+                      fullName,
+                      firstName,lastName;
         public DayOfWeek dayOfWeek;
         public short classBegin,classEnd;
         public String location;
@@ -231,7 +255,14 @@ public class MyStudentService implements StudentService {
         public int sectionId,
                    instructorId,
                    classId;
-        public Array weekList;
+        public HashSet<Short> weekList;
+    }
+    /**
+     * searchCourse()中4.3.0的内部类
+     */
+    public class selectedInfo{
+        public String courseId;
+        public String fullName;
     }
 
     @Override
@@ -302,7 +333,6 @@ public class MyStudentService implements StudentService {
                                               where id=?
                                           )
                          join section_class on section_class.section_id=section.id""";
-            //TODO: query中，Array→Set<Short>有没有bug?
             ArrayList<CourseSectionClass> classes =
                     Util.query(CourseSectionClass.class,con,sql6,studentId,sectionId);
             //5.2.2获取该sectionId的sectionClass: selectClasses
@@ -312,7 +342,6 @@ public class MyStudentService implements StudentService {
                            week_list weekList
                     from section_class
                     where section_id=?;""";
-            //TODO: query中，Array→Set<Short>有没有bug?
             ArrayList<CourseSectionClass> selectClasses =
                     Util.query(CourseSectionClass.class,con,sql7,sectionId);
             //5.2.3比较selectClasses和classes,判断时间是否冲突(类似哈希思想)
@@ -368,6 +397,7 @@ public class MyStudentService implements StudentService {
         String sql="insert into student_section(student_id, section_id, mark) values (?,?,?);";
         Util.update(con,sql,studentId,sectionId,grade);
     }
+
     private void updateLeftCapacity(Connection con,int sectionId,boolean isAdd) throws SQLException{
         //isAdd为true: left_capacity++
         //isAdd为false: left_capacity--
@@ -396,6 +426,7 @@ public class MyStudentService implements StudentService {
         ps.close();
     }
 
+    //TODO:完成这三个方法
     @Override
     public void setEnrolledCourseGrade(int studentId, int sectionId, Grade grade) {
 
