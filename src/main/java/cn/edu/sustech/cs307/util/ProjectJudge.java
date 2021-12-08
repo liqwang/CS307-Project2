@@ -68,7 +68,6 @@ public final class ProjectJudge {
                     (int) params.get(13), (int) params.get(14));
         } catch (Throwable t) {
             t.printStackTrace();
-            System.exit(1);//TODO: 这行是自己加的
             return errorCourseList;
         }
     }

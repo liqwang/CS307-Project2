@@ -29,7 +29,7 @@ public class MyMajorService implements MajorService {
 
     @Override
     public int addMajor(String name, int departmentId) {
-        try(Connection con= SQLDataSource.getInstance().getSQLConnection()) {
+        try{
             String sql="insert into major(name, department_id) values (?,?)";
             PreparedStatement ps = con.prepareStatement(sql,PreparedStatement.RETURN_GENERATED_KEYS);
             ps.setString(1,name);
@@ -112,16 +112,23 @@ public class MyMajorService implements MajorService {
         }
     }
 
-    //TODO:完成这两个方法
     @Override
-    public void addMajorCompulsoryCourse(int majorId, String courseId) { //这两个没看懂
+    public void addMajorCompulsoryCourse(int majorId, String courseId) {
         String sql = "insert into major_course values (?, ?, true)";
-        Util.update(con, sql, majorId, courseId);
+        try {
+            Util.update(con, sql, majorId, courseId);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     public void addMajorElectiveCourse(int majorId, String courseId) {
         String sql = "insert into major_course values (?, ?, false)";
-        Util.update(con, sql, majorId, courseId);
+        try {
+            Util.update(con, sql, majorId, courseId);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 }

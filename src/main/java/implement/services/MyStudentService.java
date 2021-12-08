@@ -56,18 +56,18 @@ public class MyStudentService implements StudentService {
     public List<CourseSearchEntry> searchCourse(int studentId, int semesterId, @Nullable String searchCid, @Nullable String searchName, @Nullable String searchInstructor, @Nullable DayOfWeek searchDayOfWeek, @Nullable Short searchClassTime, @Nullable List<String> searchClassLocations, CourseType searchCourseType, boolean ignoreFull, boolean ignoreConflict, boolean ignorePassed, boolean ignoreMissingPrerequisites, int pageSize, int pageIndex) {
         //0.准备所有信息: infos
         String sql= """
-                select left_capacity leftCapacity,
-                       course_id courseId,
-                       c.name||'['||sec.name||']' fullName,
-                       first_name firstName,last_name lastName,
-                       day_of_week dayOfWeek,
-                       class_begin classBegin,class_end classEnd,
+                select left_capacity "leftCapacity",
+                       course_id "courseId",
+                       c.name||'['||sec.name||']' "fullName",
+                       first_name "firstName",last_name "lastName",
+                       day_of_week "dayOfWeek",
+                       class_begin "classBegin",class_end "classEnd",
                        location,
                        is_pf grading,
-                       sec.id sectionId,
-                       instructor_id instructorId,
-                       sc.id classId,
-                       week_list weekList
+                       sec.id "sectionId",
+                       instructor_id "instructorId",
+                       sc.id "classId",
+                       week_list "weekList"
                 from student_section ss
                      join section sec on ss.section_id=sec.id
                                       and student_id=?
@@ -94,7 +94,7 @@ public class MyStudentService implements StudentService {
             正确结果应该是该section被筛除，但是只筛选infos无法做到这一点
              */
             HashSet<Integer> filteredSids = new HashSet<>();
-            infos.forEach(info -> {
+            infos=infos.peek(info -> {
                 if ((info.firstName + info.lastName).startsWith(searchInstructor) ||
                    (info.firstName + ' ' + info.lastName).startsWith(searchInstructor) ||
                    info.firstName.startsWith(searchInstructor) ||
@@ -106,7 +106,7 @@ public class MyStudentService implements StudentService {
         }
         if (searchDayOfWeek != null) {
             HashSet<Integer> filteredSids = new HashSet<>();
-            infos.forEach(info -> {
+            infos=infos.peek(info -> {
                 if(info.dayOfWeek == searchDayOfWeek){
                     filteredSids.add(info.sectionId);
                 }
@@ -115,7 +115,7 @@ public class MyStudentService implements StudentService {
         }
         if (searchClassTime != null) {
             HashSet<Integer> filteredSids = new HashSet<>();
-            infos.forEach(info -> {
+            infos=infos.peek(info -> {
                 if(info.classBegin <= searchClassTime &&
                    info.classEnd >= searchClassTime){
                     filteredSids.add(info.sectionId);
@@ -125,7 +125,7 @@ public class MyStudentService implements StudentService {
         }
         if (searchClassLocations != null) {
             HashSet<Integer> filteredSids = new HashSet<>();
-            infos.forEach(info -> {
+            infos=infos.peek(info -> {
                 if(searchClassLocations.contains(info.location)){
                     filteredSids.add(info.sectionId);
                 }
@@ -152,7 +152,7 @@ public class MyStudentService implements StudentService {
                 //Motivation: 为了避免infos中重复的courseId多次检验，优化效率
                 //3.1.2.1首先生成不重复的courseId的HashSet: cids
                 HashSet<String> cids = new HashSet<>();
-                infos.forEach(info -> cids.add(info.courseId));
+                infos=infos.peek(info -> cids.add(info.courseId));
                 //3.1.2.2筛选满足先修课的cids，生成filCids
                 ArrayList<String> filCids = (ArrayList<String>) cids.stream().
                                             filter(cid -> passedPre(passedCids, cid)).
@@ -165,7 +165,7 @@ public class MyStudentService implements StudentService {
         ArrayList<CourseSearchEntry> entries = new ArrayList<>();
         //4.1聚合生成所有的sectionIds
         HashSet<Integer> sectionIds = new HashSet<>();
-        infos.forEach(info -> sectionIds.add(info.sectionId));
+        infos=infos.peek(info -> sectionIds.add(info.sectionId));
         //4.2将流infos转为List
         List<Info> information = infos.collect(Collectors.toList());
         //4.3生成每个entry对象
@@ -234,14 +234,15 @@ public class MyStudentService implements StudentService {
             entries.add(entry);
         }
         //5.筛选ignoreConflict
+        Stream<CourseSearchEntry> entryStream = entries.stream();
         if(ignoreConflict){
-            entries=(ArrayList<CourseSearchEntry>)
-                entries.stream().filter(it -> it.conflictCourseNames.isEmpty()).collect(Collectors.toList());
+            entryStream=entryStream.filter(it -> it.conflictCourseNames.isEmpty());
         }
         //6.按接口要求排序:courseId→courseFullName
         //TODO: 排序
-        //TODO: offset和index
-        return entries;
+        entryStream=entryStream.sorted(Comparator.comparing(e->e.course.id));
+        //TODO: offset和size:effectively `offset pageIndex * pageSize`???
+        return entryStream.skip(pageIndex).limit(pageSize).collect(Collectors.toList());
     }
     /**
      * searchCourse()的内部类
@@ -324,9 +325,9 @@ public class MyStudentService implements StudentService {
             //5.2时间冲突
             //5.2.1获取该学生本学期的所有class的classes: classes
             String sql6= """
-                    select day_of_week dayOfWeek,
-                           class_begin classBegin,class_end classEnd,
-                           week_list weekList
+                    select day_of_week "dayOfWeek",
+                           class_begin "classBegin",class_end "classEnd",
+                           week_list "weekList"
                     from student_section
                          join section on section_id=section.id
                                       and student_id=?
@@ -340,9 +341,9 @@ public class MyStudentService implements StudentService {
                     Util.query(CourseSectionClass.class,con,sql6,studentId,sectionId);
             //5.2.2获取该sectionId的sectionClass: selectClasses
             String sql7= """
-                    select day_of_week dayOfWeek,
-                           class_begin classBegin,class_end classEnd,
-                           week_list weekList
+                    select day_of_week "dayOfWeek",
+                           class_begin "classBegin",class_end "classEnd",
+                           week_list "weekList"
                     from section_class
                     where section_id=?;""";
             ArrayList<CourseSectionClass> selectClasses =
@@ -385,12 +386,16 @@ public class MyStudentService implements StudentService {
     public void dropCourse(int studentId, int sectionId) throws IllegalStateException {
         //同时要修改表section中的left_capacity,调用updateLeftCapacity()
         String sql="delete from student_section where student_id=? and section_id=?;";
-        if(Util.update(con,sql,studentId,sectionId)==1){
-            try {
-                updateLeftCapacity(con,sectionId,false);
-            } catch (SQLException e) {
-                e.printStackTrace();
+        try {
+            if(Util.update(con,sql,studentId,sectionId)==1){
+                try {
+                    updateLeftCapacity(con,sectionId,false);
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 
@@ -406,8 +411,9 @@ public class MyStudentService implements StudentService {
             PreparedStatement ps1=con.prepareStatement(sql1);
             ps1.setInt(1,sectionId);
             ResultSet rs1=ps1.executeQuery();
-            boolean is_pf=rs1.getBoolean(2);
-            if(is_pf){
+            rs1.next();
+            boolean isPf=rs1.getBoolean(2);
+            if(isPf){
                 if(grade==PassOrFailGrade.PASS){
                     mark=-2;
                 }else if(grade==PassOrFailGrade.FAIL){
@@ -602,7 +608,8 @@ public class MyStudentService implements StudentService {
         //1.获取布尔表达式
         //1.1获取先修课String: pre
         String sql="select prerequisite from course where id=?";
-        String pre = Util.query(String.class, con, sql, courseId).get(0);
+        String pre = (String)Util.querySingle(con, sql, courseId).get(0);
+        if(pre==null){return true;}
         //1.2提取出pre中的课程id: eg:((MA101A OR MA101B) AND MA103A)
         String[] preCids = pre.split(" (AND|OR) ");// ((MA101A MA101B) MA103A)
         for (int i = 0; i < preCids.length; i++) {

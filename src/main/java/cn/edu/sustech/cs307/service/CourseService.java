@@ -27,7 +27,7 @@ public interface CourseService {
 
     /**
      * Add one course section according to following parameters:
-     * If some of parameters are invalid, throw {@link cn.edu.sustech.cs307.exception.IntegrityViolationException}
+     * If some parameters are invalid, throw {@link cn.edu.sustech.cs307.exception.IntegrityViolationException}
      *
      * @param courseId represents the id of course. For example, CS307, CS309
      * @param semesterId the id of semester
@@ -40,15 +40,7 @@ public interface CourseService {
 
     /**
      * Add one course section class according to following parameters:
-     * If some of parameters are invalid, throw {@link cn.edu.sustech.cs307.exception.IntegrityViolationException}
-     *
-     * @param sectionId
-     * @param instructorId
-     * @param dayOfWeek
-     * @param weekList
-     * @param classStart
-     * @param classEnd
-     * @param location
+     * If some parameters are invalid, throw {@link cn.edu.sustech.cs307.exception.IntegrityViolationException}
      * @return the CourseSectionClass id of new inserted line.
      */
     int addCourseSectionClass(int sectionId, int instructorId, DayOfWeek dayOfWeek, Set<Short> weekList,
@@ -60,7 +52,6 @@ public interface CourseService {
      * shall be removed together.
      * More specifically, remove all related courseSection, all related CourseSectionClass and all related select course records
      * when a course has been removed
-     * @param courseId
      */
     void removeCourse(String courseId);
 
@@ -77,7 +68,6 @@ public interface CourseService {
      *  To remove an entity from the system, related entities dependent on this entity (usually rows referencing the row to remove through foreign keys in a relational database)
      *  shall be removed together.
      *  More specifically, only remove course section class
-     * @param classId
      */
     void removeCourseSectionClass(int classId);
 
@@ -88,14 +78,12 @@ public interface CourseService {
      * We will compare the all other fields in CourseSection besides the id.
      * @param courseId if the key is non-existent, please throw an EntityNotFoundException.
      * @param semesterId if the key is non-existent, please throw an EntityNotFoundException.
-     * @return
      */
     List<CourseSection> getCourseSectionsInSemester(String courseId, int semesterId);
 
     /**
      * If there is no Course about specific id, throw EntityNotFoundException.
      * @param sectionId if the key is non-existent, please throw an EntityNotFoundException.
-     * @return
      */
     Course getCourseBySection(int sectionId);
 

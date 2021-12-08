@@ -17,8 +17,8 @@ public class MyFactory extends ServiceFactory {
         registerService(StudentService.class,new MyStudentService());
         registerService(UserService.class,new MyUserService());
     }
-    //TODO: 效率优化：searchCourse()中的并行流?
     //TODO: 效率优化：Bitmap算法?
+    //TODO: 系统化排查bug+优化
     @Override
     public List<String> getUIDs() {
         return List.of("12011619","12011941","12012403");

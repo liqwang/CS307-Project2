@@ -1,5 +1,6 @@
 package implement;
 
+import cn.edu.sustech.cs307.dto.Course;
 import cn.edu.sustech.cs307.exception.IntegrityViolationException;
 
 import java.lang.reflect.Field;
@@ -13,18 +14,19 @@ public class Util {
     /**
      * 通用的增、删、改操作，返回受影响的行数
      */
-    public static int update(Connection con,String sql,Object... param){
+    public static int update(Connection con,String sql,Object... param) throws SQLException{
+        PreparedStatement ps;
         try {
-            PreparedStatement ps = con.prepareStatement(sql);
+            ps = con.prepareStatement(sql);
             for (int i = 0; i < param.length; i++) {
                 ps.setObject(i + 1, param[i]);
             }
-            return ps.executeUpdate();
         } catch (SQLException e){
             e.printStackTrace();
             System.exit(1);
             return -1;
         }
+        return ps.executeUpdate();
     }
 
     /**
@@ -67,14 +69,15 @@ public class Util {
                 T t = clazz.newInstance();
                 for (int i = 0; i < col; i++) {
                     Object val;
-                    if(rsmd.getColumnName(i+1).equals("week_list")){
-                        val= new HashSet<>(List.of((Short[])rs.getArray(i+1).getArray()));
-                    }
-                    if(rsmd.getColumnName(i+1).equals("day_of_week")) {
-                        val= DayOfWeek.of(rs.getInt(i+1));
-                    }else {
-                        val = rs.getObject(i+1);
-                    }
+                    String otherName = rsmd.getColumnLabel(i+1);
+                    val = switch (otherName) {
+                        case "weekList" -> new HashSet<>(List.of((Short[]) rs.getArray(i + 1).getArray()));
+                        case "dayOfWeek" -> DayOfWeek.of(rs.getInt(i + 1));
+                        case "grading" -> (rs.getBoolean(i + 1) ? Course.CourseGrading.PASS_OR_FAIL :
+                                Course.CourseGrading.HUNDRED_MARK_SCORE);
+                        case "classBegin", "classEnd" -> rs.getShort(i + 1);
+                        default -> rs.getObject(i + 1);
+                    };
                     String fieldName = rsmd.getColumnLabel(i+1);
                     Field field = clazz.getDeclaredField(fieldName);
                     field.set(t,val);

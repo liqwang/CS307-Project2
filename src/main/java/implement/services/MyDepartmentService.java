@@ -23,32 +23,43 @@ public class MyDepartmentService implements DepartmentService {
         }
     }
 
+    //完成√
     @Override
     public int addDepartment(String name) {
         String sql="insert into department (name) values (?)";
         return Util.addAndGetKey(con,sql,name);
     }
 
+    //完成√
     @Override
     public void removeDepartment(int departmentId) {
         String sql="delete from department where id=?";
-        if(Util.update(con,sql,departmentId)==0){
-            throw new EntityNotFoundException();
+        try {
+            if(Util.update(con,sql,departmentId)==0){
+                throw new EntityNotFoundException();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.exit(1);
         }
     }
 
+    //完成√
     @Override
     public List<Department> getAllDepartments() {
         String sql="select * from department";
         return Util.query(Department.class,con,sql);
     }
 
+    //完成√
     @Override
     public Department getDepartment(int departmentId) {
         String sql="select * from department where id=?";
-        ArrayList<Department> res=Util.query(Department.class,con,sql,departmentId);
-        if(res.isEmpty()){
+        try {
+            return Util.query(Department.class, con, sql, departmentId).get(0);
+        }catch (IndexOutOfBoundsException e){
+            e.printStackTrace();
             throw new EntityNotFoundException();
-        }else {return res.get(0);}
+        }
     }
 }
