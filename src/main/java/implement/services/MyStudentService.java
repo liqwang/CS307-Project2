@@ -367,8 +367,51 @@ public class MyStudentService implements StudentService {
     @Override
     public void addEnrolledCourseWithGrade(int studentId, int sectionId, @Nullable Grade grade) {
         //不要修改left_capacity
-        String sql="insert into student_section(student_id, section_id, mark) values (?,?,?);";
-        Util.update(con,sql,studentId,sectionId,grade);
+        try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
+            int mark;
+            String sql1= """
+                    select distinct s.id,c.is_pf
+                     from section s join public.course c on c.id = s.course_id
+                     where s.id=?""";
+            PreparedStatement ps1=con.prepareStatement(sql1);
+            ps1.setInt(1,sectionId);
+            ResultSet rs1=ps1.executeQuery();
+            boolean is_pf=rs1.getBoolean(2);
+            if(is_pf){
+                if(grade==PassOrFailGrade.PASS){
+                    mark=-2;
+                }else if(grade==PassOrFailGrade.FAIL){
+                    mark=-3;
+                }else {
+                    mark=-1; //空 或 给分成绩与course要求不符，即要求PF，但给的百分制，不计入
+                }
+            }else{
+                if(grade==null){
+                    mark=-1;
+                }else{
+                   mark= grade.when(new Grade.Cases<>() {
+                       @Override
+                       public Integer match(PassOrFailGrade self) {
+                           return -1;
+                       }//不匹配
+
+                       @Override
+                       public Integer match(HundredMarkGrade self) {
+                           return (int) (self.mark);
+                       }
+                   });
+                }
+            }
+            String sql="insert into student_section(student_id, section_id, mark) values (?,?,?);";
+            PreparedStatement ps=con.prepareStatement(sql);
+            ps.setInt(1,studentId);
+            ps.setInt(2,sectionId);
+            ps.setInt(3,mark);
+            ps.executeUpdate();
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+            throw new IntegrityViolationException();
+        }
     }
     private void updateLeftCapacity(Connection con,int sectionId,boolean isAdd) throws SQLException{
         //isAdd为true: left_capacity++
@@ -400,7 +443,46 @@ public class MyStudentService implements StudentService {
 
     @Override
     public void setEnrolledCourseGrade(int studentId, int sectionId, Grade grade) {
+        try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
+            int mark;
+            String sql1= """
+                    select distinct s.id,c.is_pf
+                     from section s join public.course c on c.id = s.course_id
+                     where s.id=?;""";
+            PreparedStatement ps1=con.prepareStatement(sql1);
+            ps1.setInt(1,sectionId);
+            ResultSet rs1=ps1.executeQuery();
+            boolean is_pf=rs1.getBoolean(2);
+            if(is_pf){
+                if(grade==PassOrFailGrade.PASS){
+                    mark=-2;
+                }else if(grade==PassOrFailGrade.FAIL){
+                    mark=-3;
+                }else {
+                    mark=-1; //空 或 给分成绩与course要求不符，即要求PF，但给的百分制，不计入
+                }
+            }else{
+                mark= grade.when(new Grade.Cases<>() {
+                    @Override
+                    public Integer match(PassOrFailGrade self) {
+                        return -1;
+                    }//不匹配
 
+                    @Override
+                    public Integer match(HundredMarkGrade self) {
+                        return (int) (self.mark);
+                    }
+                });
+            }
+            String sql="update student_section set mark=? where section_id=? and student_id=?;";
+            PreparedStatement ps=con.prepareStatement(sql);
+            ps.setInt(1,mark);
+            ps.setInt(2,sectionId);
+            ps.setInt(3,studentId);
+            ps.executeUpdate();
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
     }
 
     @Override
@@ -408,15 +490,15 @@ public class MyStudentService implements StudentService {
         Map<Course,Grade> courseGradeMap=new HashMap<>();
         try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
             String sql= """
-                    select all_section.section_id,all_section.mark,course.id,course.name,course.credit,course.class_hour,course.is_pf from((
-                                          select section_id,student_id,course_id from
-                                          ((select section_id,mark,student_id from student_section where student_id=?) a
-                                          join section s on s.id=a.section_id) b
-                                          where b.semester_id=?) c
-                                          join student_section on c.student_id=student_section.student_id and c.section_id=student_section.student_id
-                                          join section s2 on s2.id = student_section.section_id) all_section
-                                          join course on course.id=all_section.course_id
-                                          order by all_section.semester_id;""";
+                    select student_section.section_id,student_section.mark,course.id,course.name,course.credit,course.class_hour,course.is_pf from(
+                           select section_id,student_id,course_id from
+                           ((select section_id,mark,student_id from student_section where student_id=?) a
+                           join section s on s.id=a.section_id) b
+                           where b.semester_id=?) c
+                           join student_section on c.student_id=student_section.student_id and c.section_id=student_section.student_id
+                           join section s2 on s2.id = student_section.section_id
+                           join course on course.id=s2.course_id
+                           order by s2.semester_id;""";
             /* c选出了这个学期学过的课，all_section是筛选这个学期学过的课有没有重修过，order by semester_id 为了取最新成绩
                 联立course 为了新建course对象
             */
