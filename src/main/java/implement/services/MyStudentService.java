@@ -3,6 +3,8 @@ package implement.services;
 import cn.edu.sustech.cs307.database.SQLDataSource;
 import cn.edu.sustech.cs307.dto.*;
 import cn.edu.sustech.cs307.dto.grade.Grade;
+import cn.edu.sustech.cs307.dto.grade.HundredMarkGrade;
+import cn.edu.sustech.cs307.dto.grade.PassOrFailGrade;
 import cn.edu.sustech.cs307.exception.EntityNotFoundException;
 import cn.edu.sustech.cs307.exception.IntegrityViolationException;
 import cn.edu.sustech.cs307.service.StudentService;
@@ -403,6 +405,54 @@ public class MyStudentService implements StudentService {
 
     @Override
     public Map<Course, Grade> getEnrolledCoursesAndGrades(int studentId, @Nullable Integer semesterId) {
+        Map<Course,Grade> courseGradeMap=new HashMap<>();
+        try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
+            String sql= """
+                    select all_section.section_id,all_section.mark,course.id,course.name,course.credit,course.class_hour,course.is_pf from((
+                                          select section_id,student_id,course_id from
+                                          ((select section_id,mark,student_id from student_section where student_id=?) a
+                                          join section s on s.id=a.section_id) b
+                                          where b.semester_id=?) c
+                                          join student_section on c.student_id=student_section.student_id and c.section_id=student_section.student_id
+                                          join section s2 on s2.id = student_section.section_id) all_section
+                                          join course on course.id=all_section.course_id
+                                          order by all_section.semester_id;""";
+            /* c选出了这个学期学过的课，all_section是筛选这个学期学过的课有没有重修过，order by semester_id 为了取最新成绩
+                联立course 为了新建course对象
+            */
+            PreparedStatement ps = con.prepareStatement(sql);
+            ps.setInt(1,studentId);
+            ps.setInt(2,semesterId);
+            ResultSet rs=ps.executeQuery();
+            while(rs.next()){
+                Course course=new Course();
+                course.id=rs.getString(3);
+                course.name=rs.getString(4);
+                course.credit=rs.getInt(5);
+                boolean is_pf=rs.getBoolean(6);
+                if(is_pf){
+                    course.grading= Course.CourseGrading.PASS_OR_FAIL;
+                }else {
+                    course.grading= Course.CourseGrading.HUNDRED_MARK_SCORE;
+                }
+                int mark=rs.getInt(2);
+                Grade grade;
+                if(mark==-1){
+                    grade=null;
+                }else if(mark==-2){
+                    grade= PassOrFailGrade.PASS;
+                }else if(mark==-3){
+                    grade=PassOrFailGrade.FAIL;
+                }else{
+                    grade=new HundredMarkGrade((short) mark);
+                }
+                courseGradeMap.put(course,grade);
+            }
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+            throw new EntityNotFoundException();
+        }
+
         return null;
     }
 
