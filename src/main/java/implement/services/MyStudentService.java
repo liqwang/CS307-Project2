@@ -408,7 +408,59 @@ public class MyStudentService implements StudentService {
 
     @Override
     public CourseTable getCourseTable(int studentId, Date date) {
-        return null;
+        CourseTable ct = new CourseTable();
+        try{
+            String sql = """
+                    select c.name, s.name, sc.instructor_id, i.first_name, i.last_name, sc.class_begin, sc.class_end, location, sc.day_of_week
+                    from student
+                             join student_section ss on student.id = ss.student_id
+                             join section s on s.id = ss.section_id
+                             join course c on c.id = s.course_id
+                             join section_class sc on s.id = sc.section_id
+                             join instructor i on i.id = sc.instructor_id
+                    where s.id = ? and enrolled_date = ?""";
+            PreparedStatement ps = con.prepareStatement(sql);
+            ps.setInt(1,studentId);
+            ps.setDate(2, date);
+            ResultSet rs = ps.executeQuery();
+            // 这里分开存了一周内，周一到周日的课程
+            ArrayList<Set<CourseTable.CourseTableEntry>> ctset = new ArrayList<>();
+            for(int i=0;i<7;i++){
+                Set<CourseTable.CourseTableEntry> set = new HashSet<CourseTable.CourseTableEntry>();
+                ctset.add(set);
+            }
+            if(rs.next()) {
+                String courseName = rs.getString(1);
+                String sectionName = rs.getString(2);
+                int instructorId = rs.getInt(3);
+                String IFName = rs.getString(4);
+                String ILName = rs.getString(5);
+                String IFullName;
+                if (IFName.charAt(0) >= 'A' && IFName.charAt(0) <= 'Z') IFullName = IFName + " " + ILName;
+                else IFullName = IFName + ILName;
+                Instructor ins = new Instructor();
+                ins.id = instructorId;
+                ins.fullName = IFullName;
+                short begin = rs.getShort(6);
+                short end = rs.getShort(7);
+                String location = rs.getString(8);
+                CourseTable.CourseTableEntry ctableE = new CourseTable.CourseTableEntry();
+                ctableE.courseFullName = String.format("%s[%s]", courseName, sectionName);
+                ctableE.classBegin = begin;
+                ctableE.classEnd = end;
+                ctableE.instructor = ins;
+                ctableE.location = location;
+                int weekday = rs.getInt(9);
+                ctset.get(weekday - 1).add(ctableE);
+            }
+            for(int i=0;i<7;i++){
+                DayOfWeek dow = DayOfWeek.of(i+1);
+                ct.table.put(dow, ctset.get(i));
+            }
+        }catch(SQLException e){
+            e.printStackTrace();
+        }
+        return ct;
     }
 
     @Override
