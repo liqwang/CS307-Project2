@@ -98,70 +98,68 @@ public class MyCourseService implements CourseService {
         }
     }
 
+    //完成√
     @Override
     public void removeCourse(String courseId) {
-        try{
-            String sql1="delete from course where id=?";
+        try{String sql1= """
+                delete from section_class where id in(select section_class.id
+                from section_class join section s on s.id = section_class.section_id
+                join public.course c on c.id = s.course_id
+                where c.id=?);""";
             if(Util.update(con,sql1,courseId)==0){
                 throw new EntityNotFoundException();
             }
-
+            //删CourseSectionClass
+            String sql2= """
+                    delete from student_section where student_section.section_id in(select s.id
+                    from section s join public.course c on c.id = s.course_id
+                    where c.id=?);""";
+            if(Util.update(con,sql2,courseId)==0){
+                throw new EntityNotFoundException();
+            }
+            //删student_section
+            String sql3= """
+                    delete from section where course_id=?;""";
+            if(Util.update(con,sql3,courseId)==0){
+                throw new EntityNotFoundException();
+            }
+            //删section
             String sql4="delete from major_course where course_id=?";
-            Util.update(con,sql4,courseId);
+            if(Util.update(con,sql4,courseId)==0){
+                throw new EntityNotFoundException();
+            }
+            //删major_course
+            String sql5="delete from course where id=?";
+            if(Util.update(con,sql5,courseId)==0){
+                throw new EntityNotFoundException();
+            }
+            //删course
 
-            String sql2="delete from section where course_id=?";
-            PreparedStatement ps2 = con.prepareStatement(sql2,PreparedStatement.RETURN_GENERATED_KEYS);
-            ps2.setString(1,courseId);
-            ps2.executeUpdate();
-            ResultSet rs=ps2.getGeneratedKeys();
-            //TODO: bug:一个course有多个section
-            int sectionId=rs.getInt(1);
-
-            String sql5="delete from student_section where section_id=?";
-            Util.update(con,sql5,sectionId);
-
-            String sql6="delete from semester where id=?";
-            Util.update(con,sql6,sectionId);
-
-            String sql3="delete from section_class where section_id=?";
-            PreparedStatement ps3 = con.prepareStatement(sql3,PreparedStatement.RETURN_GENERATED_KEYS);
-            ps3.setInt(1,sectionId);
-            ps3.executeUpdate();
-            ResultSet rs2=ps3.getGeneratedKeys();
-            int sectionClassId=rs2.getInt(1);
-
-            String sql7="delete from instructor where id=?";
-            Util.update(con,sql7,sectionClassId);
         } catch (SQLException e) {
             e.printStackTrace();
             System.exit(1);
         }
     }
 
+    //完成√
     @Override
     public void removeCourseSection(int sectionId) {
         try{
-            String sql2="delete from section where id=?";
+            String sql1= """
+                    delete from section_class where id in(select section_class.id
+                    from section_class join section s on s.id = section_class.section_id
+                    where s.id=?);""";
+            if(Util.update(con,sql1,sectionId)==0){
+                throw new EntityNotFoundException();
+            }
+            String sql2="delete from student_section where section_id=?";
             if(Util.update(con,sql2,sectionId)==0){
                 throw new EntityNotFoundException();
             }
-
-            String sql5="delete from student_section where section_id=?";
-            Util.update(con,sql5,sectionId);
-
-            String sql6="delete from semester where id=?";
-            Util.update(con,sql6,sectionId);
-
-            String sql3="delete from section_class where section_id=?";
-            PreparedStatement ps3 = con.prepareStatement(sql3,PreparedStatement.RETURN_GENERATED_KEYS);
-            ps3.setInt(1,sectionId);
-            ps3.executeUpdate();
-            ResultSet rs2=ps3.getGeneratedKeys();
-            //TODO: bug:一个section有多个sectionClass
-
-            int sectionClassId=rs2.getInt(1);
-            String sql7="delete from instructor where id=?";
-            Util.update(con,sql7,sectionClassId);
+            String sql3="delete from section where id=?";
+            if(Util.update(con,sql3,sectionId)==0){
+                throw new EntityNotFoundException();
+            }
         } catch (SQLException e) {
             e.printStackTrace();
             System.exit(1);
