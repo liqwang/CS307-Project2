@@ -195,66 +195,43 @@ public class MyCourseService implements CourseService {
         return Util.query(Course.class,con,sql);
     }
 
+    //完成√
     @Override
     public List<CourseSection> getCourseSectionsInSemester(String courseId, int semesterId) {
-        ArrayList<CourseSection> cs=new ArrayList<>();
-        try{
-            String sql="select * from section where course_id=? and semester_id=?";
-            //return Util.query(CourseSection.class,con,sql,courseId,semesterId);
-            PreparedStatement ps = con.prepareStatement(sql);
-            ps.setString(1,courseId);
-            ps.setInt(2,semesterId);
-            ResultSet rs = ps.executeQuery();
-            while(rs.next()){
-                CourseSection courseSection = new CourseSection();
-                courseSection.id = rs.getInt(1);
-                courseSection.name = rs.getString(4);
-                courseSection.totalCapacity = rs.getInt(5);
-                courseSection.leftCapacity = rs.getInt(6);
-                cs.add(courseSection);
-            }
-            ps.close();
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
+        String sql= """
+                    select id,
+                           name,
+                           total_capacity "totalCapacity",
+                           left_capacity "leftCapacity"
+                    from section
+                    where course_id=? and semester_id=?""";
+        ArrayList<CourseSection> res = Util.query(CourseSection.class, con, sql, courseId, semesterId);
+        if(res.isEmpty()){
             throw new EntityNotFoundException();
         }
-        return cs;
+        return res;
     }
 
+    //完成√
     @Override
     public Course getCourseBySection(int sectionId) {
-        try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
-            String sql= """
-                    select distinct c.id,c.name,c.credit,c.is_pf,c.prerequisite
-                    from course c join section s on c.id = s.course_id
-                    where s.id=?""";
-            PreparedStatement ps = con.prepareStatement(sql);
-            ps.setInt(1,sectionId);
-            ResultSet rs = ps.executeQuery();
-            Course.CourseGrading grading;
-            if(rs.getBoolean(5)){
-                grading= Course.CourseGrading.PASS_OR_FAIL;
-            }else {
-                grading= Course.CourseGrading.HUNDRED_MARK_SCORE;
-            }
-            ps.close();
-            Course course = new Course();
-            course.id = rs.getString(1);
-            course.name = rs.getString(2);
-            course.credit = rs.getInt(3);
-            course.grading = grading;
-            course.classHour = rs.getInt(6);
-            return course;
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
+        String sql = """
+                select distinct c.id,class_hour "classHour",
+                    c.name,credit,is_pf grading
+                from course c join section s on c.id = s.course_id
+                where s.id=?""";
+        ArrayList<Course> list = Util.query(Course.class, con, sql, sectionId);
+        if (list.isEmpty()) {
             throw new EntityNotFoundException();
         }
+        return list.get(0);
     }
 
     @Override
     public List<CourseSectionClass> getCourseSectionClasses(int sectionId) {
         ArrayList<CourseSectionClass> cs=new ArrayList<>();
         try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
+            Util.query()
             String sql= """
                     select * from section_class
                     join instructor i on section_class.instructor_id = i.id
