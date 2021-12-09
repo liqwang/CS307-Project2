@@ -56,7 +56,7 @@ public class MyStudentService implements StudentService {
                 select left_capacity "leftCapacity",
                        course_id "courseId",
                        c.name||'['||sec.name||']' "fullName",
-                       first_name "firstName",last_name "lastName",
+                       full_name "fullName",
                        day_of_week "dayOfWeek",
                        class_begin "classBegin",class_end "classEnd",
                        location,
@@ -92,10 +92,8 @@ public class MyStudentService implements StudentService {
              */
             HashSet<Integer> filteredSids = new HashSet<>();
             infos=infos.peek(info -> {
-                if ((info.firstName + info.lastName).startsWith(searchInstructor) ||
-                   (info.firstName + ' ' + info.lastName).startsWith(searchInstructor) ||
-                   info.firstName.startsWith(searchInstructor) ||
-                   info.lastName.startsWith(searchInstructor)) {
+                //偷懒筛选法
+                if (info.fullName.contains(searchInstructor)) {
                     filteredSids.add(info.sectionId);
                 }
             });
@@ -210,15 +208,10 @@ public class MyStudentService implements StudentService {
                     }
                     //4.3.4准备sectionClasses
                     CourseSectionClass clazz = new CourseSectionClass();
-                    //4.3.4.1准备instructor
                     Instructor instructor = new Instructor();
-                    if ((Pattern.compile("[a-zA-Z]").matcher(info.firstName).find() || info.firstName.equals(" ")) &&
-                        (Pattern.compile("[a-zA-Z]").matcher(info.lastName).find() || info.lastName.equals(" "))) {
-                        instructor.fullName = info.firstName + " " + info.lastName;
-                    } else {instructor.fullName = info.firstName + info.lastName;}
                     instructor.id=info.instructorId;
+                    instructor.fullName=info.fullName;
                     clazz.instructor=instructor;
-                    //4.3.4.2准备其余属性
                     clazz.weekList=info.weekList;
                     clazz.id=info.classId;
                     clazz.dayOfWeek=info.dayOfWeek;
@@ -247,8 +240,7 @@ public class MyStudentService implements StudentService {
     public class Info{
         public int leftCapacity;
         public String courseId,
-                      fullName,
-                      firstName,lastName;
+                      fullName;
         public DayOfWeek dayOfWeek;
         public short classBegin,classEnd;
         public String location;
@@ -591,10 +583,10 @@ public class MyStudentService implements StudentService {
             ps.setDate(2, date);
             ResultSet rs = ps.executeQuery();
             // 这里分开存了一周内，周一到周日的课程
-            ArrayList<Set<CourseTable.CourseTableEntry>> ctset = new ArrayList<>();
+            ArrayList<Set<CourseTable.CourseTableEntry>> ctSet = new ArrayList<>();
             for(int i=0;i<7;i++){
                 Set<CourseTable.CourseTableEntry> set = new HashSet<CourseTable.CourseTableEntry>();
-                ctset.add(set);
+                ctSet.add(set);
             }
             if(rs.next()) {
                 String courseName = rs.getString(1);
@@ -618,11 +610,11 @@ public class MyStudentService implements StudentService {
                 ctableE.instructor = ins;
                 ctableE.location = location;
                 int weekday = rs.getInt(9);
-                ctset.get(weekday - 1).add(ctableE);
+                ctSet.get(weekday - 1).add(ctableE);
             }
             for(int i=0;i<7;i++){
                 DayOfWeek dow = DayOfWeek.of(i+1);
-                ct.table.put(dow, ctset.get(i));
+                ct.table.put(dow, ctSet.get(i));
             }
         }catch(SQLException e){
             e.printStackTrace();

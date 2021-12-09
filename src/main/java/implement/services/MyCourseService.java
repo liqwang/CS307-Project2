@@ -134,7 +134,6 @@ public class MyCourseService implements CourseService {
                 throw new EntityNotFoundException();
             }
             //删course
-
         } catch (SQLException e) {
             e.printStackTrace();
             System.exit(1);
@@ -218,86 +217,53 @@ public class MyCourseService implements CourseService {
                     c.name,credit,is_pf grading
                 from course c join section s on c.id = s.course_id
                 where s.id=?""";
-        ArrayList<Course> list = Util.query(Course.class, con, sql, sectionId);
-        if (list.isEmpty()) {
+        ArrayList<Course> res = Util.query(Course.class, con, sql, sectionId);
+        if (res.isEmpty()) {
             throw new EntityNotFoundException();
         }
-        return list.get(0);
+        return res.get(0);
     }
 
+    //完成√
     @Override
     public List<CourseSectionClass> getCourseSectionClasses(int sectionId) {
-        ArrayList<CourseSectionClass> cs=new ArrayList<>();
-        try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
-            Util.query()
-            String sql= """
-                    select * from section_class
-                    join instructor i on section_class.instructor_id = i.id
-                    join section s on section_class.section_id = s.id
-                    where section_id=?;""";
-            PreparedStatement ps = con.prepareStatement(sql);
-            ps.setInt(1,sectionId);
-            ResultSet rs = ps.executeQuery();
-
-            while(rs.next()){
-                int id=rs.getInt(1);
-                String fullName=rs.getString(9)+" "+rs.getString(10);
-                Instructor instructor=new Instructor();
-                instructor.id=id;
-                instructor.fullName=fullName;
-                DayOfWeek dayOfWeek=DayOfWeek.of(rs.getInt(4));
-                Short[] arr= (Short[]) rs.getArray(8).getArray();
-                Set<Short> weekList=new HashSet<>(Arrays.asList(arr));//不确定
-                CourseSection section=new CourseSection();
-
-                section.id=rs.getInt(1);
-                section.name=rs.getString(13);
-                section.totalCapacity=rs.getInt(14);
-                section.leftCapacity=rs.getInt(15);
-                short classBegin, classEnd;
-                classBegin=rs.getShort(5);
-                classEnd=rs.getShort(6);
-                String location=rs.getString(7);
-
-                CourseSectionClass courseSectionClass=new CourseSectionClass();
-                courseSectionClass.id=id;
-                courseSectionClass.instructor=instructor;
-                courseSectionClass.dayOfWeek=dayOfWeek;
-                courseSectionClass.weekList=weekList;
-                courseSectionClass.classBegin=classBegin;
-                courseSectionClass.classEnd=classEnd;
-                courseSectionClass.location=location;
-                cs.add(courseSectionClass);
-            }
-            ps.close();
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
+        String sql = """
+                select id,
+                       instructor_id instructor,
+                       day_of_week "dayOfWeek",
+                       week_list "weekList",
+                       class_begin "classBegin",
+                       class_end "classEnd",
+                       location
+                from section_class
+                where id=?;""";
+        ArrayList<CourseSectionClass> res = Util.query(CourseSectionClass.class, con, sql, sectionId);
+        if (res.isEmpty()) {
             throw new EntityNotFoundException();
         }
-        return cs;
+        return res;
     }
 
+    //完成√
     @Override
     public CourseSection getCourseSectionByClass(int classId) {
-        try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
-            String sql= """
-                    select distinct section.id,course_id,semester_id,name,total_capacity,left_capacity
-                    from section join public.section_class sc on section.id = sc.section_id
-                    where sc.id=?;""";
-            PreparedStatement ps = con.prepareStatement(sql);
-            ps.setInt(1,classId);
-            ResultSet rs = ps.executeQuery();
-            ps.close();
-            CourseSection courseSection=new CourseSection();
-            courseSection.id=rs.getInt(1);
-            courseSection.name=rs.getString(4);
-            courseSection.totalCapacity=rs.getInt(5);
-            courseSection.leftCapacity=rs.getInt(6);
-            return courseSection;
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
+        String sql = """
+                    select section_id
+                    from section_class
+                    where id=?
+                """;
+        ArrayList<Integer> id = Util.querySingle(con, sql, classId);
+        if (id.isEmpty()) {
             throw new EntityNotFoundException();
         }
+        sql = """
+                select id,
+                       name,
+                       left_capacity "leftCapacity",
+                       total_capacity "totalCapacity"
+                from section
+                where id=?""";
+        return Util.query(CourseSection.class, con, sql, id.get(0)).get(0);
     }
 
     @Override

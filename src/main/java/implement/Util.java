@@ -1,7 +1,6 @@
 package implement;
 
-import cn.edu.sustech.cs307.dto.Course;
-import cn.edu.sustech.cs307.dto.Instructor;
+import cn.edu.sustech.cs307.dto.*;
 import cn.edu.sustech.cs307.exception.IntegrityViolationException;
 
 import java.lang.reflect.Field;
@@ -71,23 +70,49 @@ public class Util {
                 for (int i = 0; i < col; i++) {
                     Object val;
                     String otherName = rsmd.getColumnLabel(i+1);
-                    val = switch (otherName) {
-                        case "weekList" -> new HashSet<>(List.of((Short[]) rs.getArray(i + 1).getArray()));
-                        case "dayOfWeek" -> DayOfWeek.of(rs.getInt(i + 1));
-                        case "grading" -> (rs.getBoolean(i + 1) ?
-                                            Course.CourseGrading.PASS_OR_FAIL :
-                                            Course.CourseGrading.HUNDRED_MARK_SCORE);
-                        case "classBegin", "classEnd" -> rs.getShort(i + 1);
-                        case "instructorId" -> {
-                            sql= """
+                    switch (otherName) {
+                        case "weekList" -> val = new HashSet<>(List.of((Short[]) rs.getArray(i + 1).getArray()));
+                        case "dayOfWeek" -> val = DayOfWeek.of(rs.getInt(i + 1));
+                        case "grading" -> val = (rs.getBoolean(i + 1) ?
+                                Course.CourseGrading.PASS_OR_FAIL :
+                                Course.CourseGrading.HUNDRED_MARK_SCORE);
+                        case "classBegin", "classEnd" -> val = rs.getShort(i + 1);
+                        case "instructor" -> {
+                            sql = """
                                     select id,
                                            full_name "fullName"
                                     from instructor
                                     where id=?""";
-                            query(Instructor.class,con,sql,rs.getInt(i+1)).get(0);
+                            val = query(Instructor.class, con, sql, rs.getInt(i + 1)).get(0);
                         }
-                        default -> rs.getObject(i + 1);
-                    };
+                        case "student" -> {
+                            sql = """
+                                    select id,
+                                           full_name "fullName",
+                                           enrolled_date "enrolledDate",
+                                           major_id "majorId"
+                                    from student
+                                    where id=?;""";
+                            val = query(Student.class, con, sql, rs.getInt(i + 1)).get(0);
+                        }
+                        case "major" -> {
+                            sql = """
+                                    select id,
+                                           name,
+                                           department_id "departmentId"
+                                    from major
+                                    where id=?;""";
+                            val = query(Major.class, con, sql, rs.getInt(i + 1)).get(0);
+                        }
+                        case "department" -> {
+                            sql = """
+                                    select *
+                                    from department
+                                    where id=?;""";
+                            val = query(Department.class, con, sql, rs.getInt(i + 1)).get(0);
+                        }
+                        default -> val = rs.getObject(i + 1);
+                    }
                     String fieldName = rsmd.getColumnLabel(i+1);
                     Field field = clazz.getDeclaredField(fieldName);
                     field.set(t,val);

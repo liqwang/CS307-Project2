@@ -88,25 +88,19 @@ public interface CourseService {
     Course getCourseBySection(int sectionId);
 
     /**
-     *
      * @param sectionId the id of {@code CourseSection}
      *                  if the key is non-existent, please throw an EntityNotFoundException.
-     * @return
      */
     List<CourseSectionClass> getCourseSectionClasses(int sectionId);
 
     /**
-     *
      * @param classId if the key is non-existent, please throw an EntityNotFoundException.
-     * @return
      */
     CourseSection getCourseSectionByClass(int classId);
 
     /**
-     *
      * @param courseId  if the key is non-existent, please throw an EntityNotFoundException.
      * @param semesterId if the key is non-existent, please throw an EntityNotFoundException.
-     * @return
      */
     List<Student> getEnrolledStudentsInSemester(String courseId, int semesterId);
 }
