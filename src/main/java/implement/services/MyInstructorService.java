@@ -29,8 +29,11 @@ public class MyInstructorService implements InstructorService {
     @Override
     public void addInstructor(int userId, String firstName, String lastName) {
         try{
-            String sql="insert into instructor (id,first_name,last_name) values (?,?,?)";
-            Util.update(con,sql,userId,firstName,lastName);
+            String fullName;
+            if(firstName.charAt(0) >= 'A' && firstName.charAt(0) <= 'Z') fullName = firstName + " " + lastName;
+            else fullName = firstName + lastName;
+            String sql="insert into instructor (id,full_name) values (?,?)";
+            Util.update(con,sql,userId,fullName);
         } catch (SQLException e) {
             e.printStackTrace();
             throw new IntegrityViolationException();

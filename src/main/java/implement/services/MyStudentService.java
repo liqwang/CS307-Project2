@@ -35,14 +35,11 @@ public class MyStudentService implements StudentService {
     @Override
     public void addStudent(int userId, int majorId, String firstName, String lastName, Date enrolledDate) {
         try(Connection con= SQLDataSource.getInstance().getSQLConnection()) {
-            String sql="insert into student (id,major_id,first_name,last_name,enrolled_date) values (?,?,?,?,?)";
-            PreparedStatement ps = con.prepareStatement(sql,PreparedStatement.RETURN_GENERATED_KEYS);
-            ps.setInt(1,userId);
-            ps.setInt(2,majorId);
-            ps.setString(3,firstName);
-            ps.setString(4,lastName);
-            ps.setDate(5,enrolledDate);
-            ps.executeUpdate();
+            String fullName;
+            if(firstName.charAt(0) >= 'A' && firstName.charAt(0) <= 'Z') fullName = firstName + " " + lastName;
+            else fullName = firstName + lastName;
+            String sql="insert into student (id,major_id,full_name,enrolled_date) values (?,?,?,?)";
+            Util.update(con, sql, userId, majorId, fullName, enrolledDate);
         }catch (SQLException throwables) {
             throwables.printStackTrace();
             throw new IntegrityViolationException();
