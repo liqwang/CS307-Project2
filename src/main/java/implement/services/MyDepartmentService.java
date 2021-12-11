@@ -33,8 +33,34 @@ public class MyDepartmentService implements DepartmentService {
     //完成√
     @Override
     public void removeDepartment(int departmentId) {
+        try {//student_section
+            String sql1= """
+                delete from student_section
+                where student_section.student_id in(select student_id from department join major m on department.id = m.department_id
+                join student s on m.id = s.major_id
+                join student_section on s.id = student_section.student_id
+                 where department.id=?);""";
+        Util.update(con,sql1,departmentId);
+        //student
+            String sql2= """
+                    delete from student
+                    where student.id in(select student.id from department join major m on department.id = m.department_id
+                    join student s on m.id = s.major_id
+                        where department.id=?)""";
+            Util.update(con,sql2,departmentId);
+            String sql3= """
+                    delete from major_course
+                    where major_id in(select m.id from department join major m on department.id = m.department_id
+                    join major_course mc on m.id = mc.major_id
+                        where department.id=?);""";
+            Util.update(con,sql3,departmentId);
+            String sql4= """
+                    delete from major
+                    where major.id in(select m.id from department
+                        join major m on department.id = m.department_id
+                        where department.id=?);""";
+            Util.update(con,sql4,departmentId);
         String sql="delete from department where id=?";
-        try {
             if(Util.update(con,sql,departmentId)==0){
                 throw new EntityNotFoundException();
             }
@@ -42,6 +68,7 @@ public class MyDepartmentService implements DepartmentService {
             e.printStackTrace();
             System.exit(1);
         }
+
     }
 
     //完成√
