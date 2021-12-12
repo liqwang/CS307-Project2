@@ -114,7 +114,7 @@ public class Util {
                         default -> val = rs.getObject(i + 1);
                     }
                     String fieldName = rsmd.getColumnLabel(i+1);
-                    Field field = clazz.getDeclaredField(fieldName);
+                    Field field = clazz.getField(fieldName);
                     field.set(t,val);
                 }
                 list.add(t);

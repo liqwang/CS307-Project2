@@ -24,21 +24,31 @@ public class MyUserService implements UserService {
     public void removeUser(int userId) {
         try{
             String sql1 = "delete from student where id = ?";
-            Util.update(con, sql1, userId);
             String sql2 = "delete from instructor where id = ?";
-            Util.update(con, sql2, userId);
+            if(Util.update(con, sql1, userId)+
+               Util.update(con, sql2, userId)==0){
+                throw new EntityNotFoundException();
+            }
         }catch (SQLException throwables) {
             throwables.printStackTrace();
         }
     }
-    //不确定util能不能这样查
+
     @Override
     public List<User> getAllUsers() {
         ArrayList<User> users = new ArrayList<>();
-            String sql1 = "select * from student";
+            String sql1 = """
+                    select enrolled_date "enrolledDate",
+                           major_id "major",
+                           id,
+                           full_name "fullName"
+                    from student;""";
             ArrayList<Student> stu = Util.query(Student.class, con, sql1);
 
-            String sql2 = "select * from instructor";
+            String sql2 = """
+                    select id,
+                           full_name "fullName"
+                    from instructor;""";
             ArrayList<Instructor> ins = Util.query(Instructor.class, con, sql2);
         users.addAll(stu);
         users.addAll(ins);

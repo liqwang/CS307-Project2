@@ -29,8 +29,7 @@ public class MyDepartmentService implements DepartmentService {
         String sql="insert into department (name) values (?)";
         return Util.addAndGetKey(con,sql,name);
     }
-
-    //TODO:删关联的表
+    //完成√
     @Override
     public void removeDepartment(int departmentId) {
         try {//student_section
@@ -68,7 +67,6 @@ public class MyDepartmentService implements DepartmentService {
             e.printStackTrace();
             System.exit(1);
         }
-
     }
 
     //完成√

@@ -8,7 +8,9 @@ import cn.edu.sustech.cs307.dto.grade.PassOrFailGrade;
 import cn.edu.sustech.cs307.exception.EntityNotFoundException;
 import cn.edu.sustech.cs307.exception.IntegrityViolationException;
 import cn.edu.sustech.cs307.service.StudentService;
+import implement.Info;
 import implement.Util;
+import implement.SelectedInfo;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -165,14 +167,14 @@ public class MyStudentService implements StudentService {
         //4.3生成每个entry对象
         //4.3.0获取该学生本学期已选的课的信息: selectedInfos(被4.3.3使用)
         sql= """
-                select course_id courseId,
-                       c.name||'['||s.name||']' fullName
+                select course_id "courseId",
+                       c.name||'['||s.name||']' "fullName"
                 from student_section
                      join section s on s.id=section_id
                                    and semester_id=?
                                    and student_id=?
                      join course c on c.id=course_id""";
-        ArrayList<selectedInfo> selectedInfos = Util.query(selectedInfo.class,con,sql,semesterId,studentId);
+        ArrayList<SelectedInfo> selectedInfos = Util.query(SelectedInfo.class,con,sql,semesterId,studentId);
         for (Integer sectionId : sectionIds) {
             CourseSearchEntry entry = new CourseSearchEntry();
             //hasGenerate标记第一次找到该sectionId，因为course和section只需生成一次
@@ -182,20 +184,20 @@ public class MyStudentService implements StudentService {
                     if(!hasGenerate) {
                         //4.3.1准备course
                         sql = """
-                            select id,name,credit,class_hour classHour,is_pf grading
+                            select id,name,credit,class_hour "classHour",is_pf grading
                             from course
                             where id=?""";
                         entry.course=Util.query(Course.class,con,sql,info.courseId).get(0);
                         //4.3.2准备section
                         sql="""
-                            select id,name,total_capacity totalCapacity,left_capacity leftCapacity
+                            select id,name,total_capacity "totalCapacity",left_capacity "leftCapacity"
                             from section
                             where id=?""";
                         entry.section=Util.query(CourseSection.class,con,sql,sectionId).get(0);
                         //4.3.3准备conflictCourseNames
                         ArrayList<String> conflictCourseNames = new ArrayList<>();
                         //4.3.3.1课程冲突
-                        for (selectedInfo it : selectedInfos) {
+                        for (SelectedInfo it : selectedInfos) {
                             if(it.courseId.equals(entry.course.id)){
                                 conflictCourseNames.add(it.fullName);
                                 break;
@@ -232,29 +234,6 @@ public class MyStudentService implements StudentService {
         entryStream=entryStream.sorted(Comparator.comparing(e->e.course.id));
         //TODO: offset和size:effectively `offset pageIndex * pageSize`???
         return entryStream.skip(pageIndex*(long)pageSize).limit(pageSize).collect(Collectors.toList());
-    }
-    /**
-     * searchCourse()的内部类
-     */
-    public class Info{
-        public int leftCapacity;
-        public String courseId,
-                      fullName;
-        public DayOfWeek dayOfWeek;
-        public short classBegin,classEnd;
-        public String location;
-        public Course.CourseGrading grading;
-        public int sectionId,
-                   instructorId,
-                   classId;
-        public HashSet<Short> weekList;
-    }
-    /**
-     * searchCourse()中4.3.0的内部类
-     */
-    public class selectedInfo{
-        public String courseId;
-        public String fullName;
     }
 
     @Override
@@ -372,30 +351,34 @@ public class MyStudentService implements StudentService {
 
     @Override
     public void dropCourse(int studentId, int sectionId) throws IllegalStateException {
-        //同时要修改表section中的left_capacity,调用updateLeftCapacity()
-        String sql="delete from student_section where student_id=? and section_id=?;";
+        String sql="select mark from student_section where student_id=? and section_id=?";
+        ArrayList<Integer> res=Util.querySingle(con,sql,studentId,sectionId);
+        if(res.isEmpty()){
+            throw new EntityNotFoundException();
+        }
+        if(res.get(0)!=-1){
+            throw new IllegalStateException();
+        }
+        sql="delete from student_section where student_id=? and section_id=?";
         try {
-            if(Util.update(con,sql,studentId,sectionId)==1){
-                try {
-                    updateLeftCapacity(con,sectionId,false);
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
+            Util.update(con,sql,studentId,sectionId);
+            updateLeftCapacity(con,sectionId,false);
         } catch (SQLException e) {
             e.printStackTrace();
+            System.exit(1);
         }
     }
 
     @Override
     public void addEnrolledCourseWithGrade(int studentId, int sectionId, @Nullable Grade grade) {
         //不要修改left_capacity
-        try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
+        try{
             int mark;
             String sql1= """
-                    select distinct s.id,c.is_pf
-                     from section s join public.course c on c.id = s.course_id
-                     where s.id=?""";
+                    select distinct s.id,
+                                    c.is_pf grading
+                    from section s join public.course c on c.id = s.course_id
+                    where s.id=?""";
             PreparedStatement ps1=con.prepareStatement(sql1);
             ps1.setInt(1,sectionId);
             ResultSet rs1=ps1.executeQuery();

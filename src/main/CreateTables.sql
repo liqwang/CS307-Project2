@@ -1,4 +1,4 @@
-create table if not exists course
+create table course
 (
     id           varchar(20) not null
         constraint course_pk
@@ -10,7 +10,7 @@ create table if not exists course
     prerequisite varchar(100)
 );
 
-create table if not exists semester
+create table semester
 (
     id         serial
         constraint semester_pk
@@ -20,7 +20,7 @@ create table if not exists semester
     end_time   date        not null
 );
 
-create table if not exists section
+create table section
 (
     id             integer default nextval('course_section_id_seq'::regclass) not null
         constraint course_section_pk
@@ -36,16 +36,15 @@ create table if not exists section
     left_capacity  integer
 );
 
-create table if not exists instructor
+create table instructor
 (
-    id         serial
+    id        serial
         constraint instructor_pk
             primary key,
-    first_name varchar(30) not null,
-    last_name  varchar(50) not null
+    full_name varchar(50)
 );
 
-create table if not exists section_class
+create table section_class
 (
     id            integer default nextval('course_section_class_id_seq'::regclass) not null
         constraint course_section_class_pk
@@ -63,7 +62,7 @@ create table if not exists section_class
     week_list     smallint[]
 );
 
-create table if not exists department
+create table department
 (
     id   serial
         constraint department_pk
@@ -71,10 +70,10 @@ create table if not exists department
     name varchar(30) not null
 );
 
-create unique index if not exists department_name_uindex
+create unique index department_name_uindex
     on department (name);
 
-create table if not exists major
+create table major
 (
     id            serial
         constraint major_pk
@@ -85,7 +84,7 @@ create table if not exists major
             references department
 );
 
-create table if not exists major_course
+create table major_course
 (
     major_id      integer     not null
         constraint fk_major
@@ -98,20 +97,19 @@ create table if not exists major_course
         primary key (major_id, course_id)
 );
 
-create table if not exists student
+create table student
 (
     id            serial
         constraint student_pk
             primary key,
-    major_id      integer     not null
+    major_id      integer not null
         constraint fk_major
             references major,
-    first_name    varchar(30) not null,
-    last_name     varchar(50) not null,
-    enrolled_date date        not null
+    enrolled_date date    not null,
+    full_name     varchar(50)
 );
 
-create table if not exists student_section
+create table student_section
 (
     student_id integer not null
         constraint fk_student

@@ -17,7 +17,9 @@ public class MyFactory extends ServiceFactory {
         registerService(StudentService.class,new MyStudentService());
         registerService(UserService.class,new MyUserService());
     }
-    //TODO: 效率优化：Bitmap算法?
+    //TODO: 效率优化：1.Bitmap算法?
+    //TODO: 效率优化：2.批量插入?
+    //TODO: 效率优化：3.多线程
     //TODO: 系统化排查bug+优化
     @Override
     public List<String> getUIDs() {

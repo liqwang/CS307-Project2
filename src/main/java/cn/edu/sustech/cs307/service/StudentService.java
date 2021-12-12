@@ -150,9 +150,6 @@ public interface StudentService {
 
     /**
      * Drop a course section for a student
-     *
-     * @param studentId
-     * @param sectionId
      * @throws IllegalStateException if the student already has a grade for the course section.
      */
     void dropCourse(int studentId, int sectionId) throws IllegalStateException;
