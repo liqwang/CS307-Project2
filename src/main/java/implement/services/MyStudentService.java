@@ -415,15 +415,21 @@ public class MyStudentService implements StudentService {
             PreparedStatement ps2=con.prepareStatement(sql2);
             ps2.setInt(1,sectionId);
             ps2.setInt(2,studentId);
-            ResultSet rs=ps2.executeQuery();
-            if(rs.wasNull()){
+//            ResultSet rs=ps2.executeQuery();
+//            if(rs.wasNull()){
                 String sql="insert into student_section(student_id, section_id, mark) values (?,?,?);";
-                Util.update(con,sql,studentId,sectionId,mark);
-            }else {
-                String sql3="update student_section set mark=?\n" +
+                try{
+                    Util.update(con,sql,studentId,sectionId,mark);
+                }catch (SQLException e){
+                    String sql3="update student_section set mark=?\n" +
                         "where student_section.student_id=? and student_section.section_id=?;";
-                Util.update(con,sql3,mark,studentId,sectionId);
-            }
+                    Util.update(con,sql3,mark,studentId,sectionId);
+                }
+//            }else {
+//                String sql3="update student_section set mark=?\n" +
+//                        "where student_section.student_id=? and student_section.section_id=?;";
+//                Util.update(con,sql3,mark,studentId,sectionId);
+//            }
 
 
         } catch (SQLException throwables) {
