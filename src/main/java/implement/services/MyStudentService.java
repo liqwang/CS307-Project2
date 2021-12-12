@@ -16,7 +16,6 @@ import java.sql.*;
 import java.sql.Date;
 import java.time.DayOfWeek;
 import java.util.*;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -232,7 +231,7 @@ public class MyStudentService implements StudentService {
         //TODO: 排序
         entryStream=entryStream.sorted(Comparator.comparing(e->e.course.id));
         //TODO: offset和size:effectively `offset pageIndex * pageSize`???
-        return entryStream.skip(pageIndex).limit(pageSize).collect(Collectors.toList());
+        return entryStream.skip(pageIndex*(long)pageSize).limit(pageSize).collect(Collectors.toList());
     }
     /**
      * searchCourse()的内部类
@@ -467,7 +466,6 @@ public class MyStudentService implements StudentService {
         ps.close();
     }
 
-    //TODO:完成这三个方法
     @Override
     public void setEnrolledCourseGrade(int studentId, int sectionId, Grade grade) {
         try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
@@ -568,6 +566,7 @@ public class MyStudentService implements StudentService {
     @Override
     public CourseTable getCourseTable(int studentId, Date date) {
         CourseTable ct = new CourseTable();
+        ct.table=new HashMap<>();
         try{
             String sql = """
                     select c.name, s.name, sc.instructor_id, i.first_name, i.last_name, sc.class_begin, sc.class_end, location, sc.day_of_week
@@ -585,7 +584,7 @@ public class MyStudentService implements StudentService {
             // 这里分开存了一周内，周一到周日的课程
             ArrayList<Set<CourseTable.CourseTableEntry>> ctSet = new ArrayList<>();
             for(int i=0;i<7;i++){
-                Set<CourseTable.CourseTableEntry> set = new HashSet<CourseTable.CourseTableEntry>();
+                Set<CourseTable.CourseTableEntry> set = new HashSet<>();
                 ctSet.add(set);
             }
             if(rs.next()) {

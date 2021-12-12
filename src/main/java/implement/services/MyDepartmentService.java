@@ -30,7 +30,7 @@ public class MyDepartmentService implements DepartmentService {
         return Util.addAndGetKey(con,sql,name);
     }
 
-    //完成√
+    //TODO:删关联的表
     @Override
     public void removeDepartment(int departmentId) {
         try {//student_section

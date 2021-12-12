@@ -101,27 +101,24 @@ public class MyCourseService implements CourseService {
     @Override
     public void removeCourse(String courseId) {
         try{String sql1= """
-                delete from section_class where id in(select section_class.id
-                from section_class join section s on s.id = section_class.section_id
-                join public.course c on c.id = s.course_id
-                where c.id=?);""";
-            if(Util.update(con,sql1,courseId)==0){
-                throw new EntityNotFoundException();
-            }
+                delete
+                from section_class
+                where id in (select section_class.id
+                             from section_class
+                                      join section s on s.id = section_class.section_id
+                                      join public.course c on c.id = s.course_id
+                             where c.id=?);""";
+            Util.update(con,sql1,courseId);
             //删CourseSectionClass
             String sql2= """
                     delete from student_section where student_section.section_id in(select s.id
                     from section s join public.course c on c.id = s.course_id
                     where c.id=?);""";
-            if(Util.update(con,sql2,courseId)==0){
-                throw new EntityNotFoundException();
-            }
+            Util.update(con,sql2,courseId);
             //删student_section
             String sql3= """
                     delete from section where course_id=?;""";
-            if(Util.update(con,sql3,courseId)==0){
-                throw new EntityNotFoundException();
-            }
+            Util.update(con,sql3,courseId);
             //删section
             String sql4="delete from major_course where course_id=?";
             if(Util.update(con,sql4,courseId)==0){
