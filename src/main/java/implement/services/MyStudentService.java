@@ -569,7 +569,7 @@ public class MyStudentService implements StudentService {
         ct.table=new HashMap<>();
         try{
             String sql = """
-                    select c.name, s.name, sc.instructor_id, i.first_name, i.last_name, sc.class_begin, sc.class_end, location, sc.day_of_week
+                    select c.name, s.name, sc.instructor_id, i.full_name, sc.class_begin, sc.class_end, location, sc.day_of_week
                     from student
                              join student_section ss on student.id = ss.student_id
                              join section s on s.id = ss.section_id
@@ -591,25 +591,21 @@ public class MyStudentService implements StudentService {
                 String courseName = rs.getString(1);
                 String sectionName = rs.getString(2);
                 int instructorId = rs.getInt(3);
-                String IFName = rs.getString(4);
-                String ILName = rs.getString(5);
-                String IFullName;
-                if (IFName.charAt(0) >= 'A' && IFName.charAt(0) <= 'Z') IFullName = IFName + " " + ILName;
-                else IFullName = IFName + ILName;
+                String IFullName = rs.getString(4);
                 Instructor ins = new Instructor();
                 ins.id = instructorId;
                 ins.fullName = IFullName;
-                short begin = rs.getShort(6);
-                short end = rs.getShort(7);
-                String location = rs.getString(8);
-                CourseTable.CourseTableEntry ctableE = new CourseTable.CourseTableEntry();
-                ctableE.courseFullName = String.format("%s[%s]", courseName, sectionName);
-                ctableE.classBegin = begin;
-                ctableE.classEnd = end;
-                ctableE.instructor = ins;
-                ctableE.location = location;
-                int weekday = rs.getInt(9);
-                ctSet.get(weekday - 1).add(ctableE);
+                short begin = rs.getShort(5);
+                short end = rs.getShort(6);
+                String location = rs.getString(7);
+                CourseTable.CourseTableEntry entry = new CourseTable.CourseTableEntry();
+                entry.courseFullName = String.format("%s[%s]", courseName, sectionName);
+                entry.classBegin = begin;
+                entry.classEnd = end;
+                entry.instructor = ins;
+                entry.location = location;
+                int weekday = rs.getInt(8);
+                ctSet.get(weekday - 1).add(entry);
             }
             for(int i=0;i<7;i++){
                 DayOfWeek dow = DayOfWeek.of(i+1);
