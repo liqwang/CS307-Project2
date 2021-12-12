@@ -578,6 +578,7 @@ public class MyStudentService implements StudentService {
             // 这里分开存了一周内，周一到周日的课程
             ArrayList<Set<CourseTable.CourseTableEntry>> ctSet = new ArrayList<>();
             for(int i=0;i<7;i++){
+                //12.12修改，原本用的哈希set，取出来的顺序和放进去的顺序不一样，这里改用LinkedHashset(似乎不需要顺序，遂改回)
                 Set<CourseTable.CourseTableEntry> set = new HashSet<>();
                 ctSet.add(set);
             }
