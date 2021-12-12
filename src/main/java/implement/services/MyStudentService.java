@@ -426,12 +426,23 @@ public class MyStudentService implements StudentService {
                    });
                 }
             }
-            String sql="insert into student_section(student_id, section_id, mark) values (?,?,?);";
-            PreparedStatement ps=con.prepareStatement(sql);
-            ps.setInt(1,studentId);
-            ps.setInt(2,sectionId);
-            ps.setInt(3,mark);
-            ps.executeUpdate();
+            String sql2= """
+                    select * from student_section
+                    where section_id=? and student_id=?;""";
+            PreparedStatement ps2=con.prepareStatement(sql2);
+            ps2.setInt(1,sectionId);
+            ps2.setInt(2,studentId);
+            ResultSet rs=ps2.executeQuery();
+            if(rs.wasNull()){
+                String sql="insert into student_section(student_id, section_id, mark) values (?,?,?);";
+                Util.update(con,sql,studentId,sectionId,mark);
+            }else {
+                String sql3="update student_section set mark=?\n" +
+                        "where student_section.student_id=? and student_section.section_id=?;";
+                Util.update(con,sql3,mark,studentId,sectionId);
+            }
+
+
         } catch (SQLException throwables) {
             throwables.printStackTrace();
             throw new IntegrityViolationException();

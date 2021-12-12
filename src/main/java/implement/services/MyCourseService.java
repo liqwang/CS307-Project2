@@ -121,9 +121,7 @@ public class MyCourseService implements CourseService {
             Util.update(con,sql3,courseId);
             //删section
             String sql4="delete from major_course where course_id=?";
-            if(Util.update(con,sql4,courseId)==0){
-                throw new EntityNotFoundException();
-            }
+            Util.update(con,sql4,courseId);
             //删major_course
             String sql5="delete from course where id=?";
             if(Util.update(con,sql5,courseId)==0){
@@ -144,13 +142,9 @@ public class MyCourseService implements CourseService {
                     delete from section_class where id in(select section_class.id
                     from section_class join section s on s.id = section_class.section_id
                     where s.id=?);""";
-            if(Util.update(con,sql1,sectionId)==0){
-                throw new EntityNotFoundException();
-            }
+            Util.update(con,sql1,sectionId);
             String sql2="delete from student_section where section_id=?";
-            if(Util.update(con,sql2,sectionId)==0){
-                throw new EntityNotFoundException();
-            }
+            Util.update(con,sql2,sectionId);
             String sql3="delete from section where id=?";
             if(Util.update(con,sql3,sectionId)==0){
                 throw new EntityNotFoundException();
