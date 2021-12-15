@@ -130,7 +130,7 @@ public class MyStudentService implements StudentService {
                              join section on section_id = id
                                          and student_id=?
                                          and mark>=60""";
-                ArrayList<String> passedCids=Util.query(String.class,con,sql,studentId);
+                ArrayList<String> passedCids=Util.querySingle(con,sql,studentId);
                 //3.1.1筛选ignorePassed
                 if(ignorePassed){
                     infos=infos.filter(info -> !passedCids.contains(info.courseId));
@@ -169,6 +169,7 @@ public class MyStudentService implements StudentService {
             ArrayList<SelectedInfo> selectedInfos = Util.query(SelectedInfo.class,con,sql,semesterId,studentId);
             for (Integer sectionId : sectionIds) {
                 CourseSearchEntry entry = new CourseSearchEntry();
+                entry.sectionClasses=new HashSet<>();
                 //hasGenerate标记第一次找到该sectionId，因为course和section只需生成一次
                 boolean hasGenerate=false;
                 for (Info info : information) {
@@ -347,27 +348,18 @@ public class MyStudentService implements StudentService {
     }
 
     @Override
-    public void dropCourse(int studentId, int sectionId) throws IllegalStateException {
-        Connection con = null;
-        try {
-            con = SQLDataSource.getInstance().getSQLConnection();
-        } catch (SQLException e) {
-            e.printStackTrace();
-            System.exit(1);
-        }
-        String sql="select mark from student_section where student_id=? and section_id=?";
-        ArrayList<Integer> res=Util.querySingle(con,sql,studentId,sectionId);
-        if(res.isEmpty()){
-            throw new EntityNotFoundException();
-        }
-        if(res.get(0)!=-1){
-            throw new IllegalStateException();
-        }
-        sql="delete from student_section where student_id=? and section_id=?";
-        try {
+    public void dropCourse(int studentId, int sectionId) throws IllegalStateException {String sql="select mark from student_section where student_id=? and section_id=?";
+        try (Connection con=SQLDataSource.getInstance().getSQLConnection()){
+            ArrayList<Integer> res=Util.querySingle(con,sql,studentId,sectionId);
+            if(res.isEmpty()){
+                throw new EntityNotFoundException();
+            }
+            if(res.get(0)!=-1){
+                throw new IllegalStateException();
+            }
+            sql="delete from student_section where student_id=? and section_id=?";
             Util.update(con,sql,studentId,sectionId);
             updateLeftCapacity(con,sectionId,false);
-            con.close();
         } catch (SQLException e) {
             e.printStackTrace();
             System.exit(1);
@@ -635,7 +627,7 @@ public class MyStudentService implements StudentService {
                         from student_section
                         where student_id=? and mark>=60
                     )""";
-            ArrayList<String> passedCids = Util.query(String.class, con, sql1, studentId);
+            ArrayList<String> passedCids = Util.querySingle(con, sql1, studentId);
             return passedPre(passedCids,courseId);
         } catch (SQLException e) {
             e.printStackTrace();
