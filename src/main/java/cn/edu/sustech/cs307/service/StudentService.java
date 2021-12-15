@@ -82,12 +82,6 @@ public interface StudentService {
     /**
      * Add one student according to following parameters.
      * If some parameters are invalid, throw {@link cn.edu.sustech.cs307.exception.IntegrityViolationException}
-     *
-     * @param userId
-     * @param majorId
-     * @param firstName
-     * @param lastName
-     * @param enrolledDate
      */
     void addStudent(int userId, int majorId, String firstName, String lastName, Date enrolledDate);
 

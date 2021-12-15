@@ -11,7 +11,8 @@ import java.util.HashSet;
 public class Info{
     public int leftCapacity;
     public String courseId,
-            fullName;
+                  courseFullName,
+                  instructorFullName;
     public DayOfWeek dayOfWeek;
     public short classBegin,classEnd;
     public String location;

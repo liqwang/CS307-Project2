@@ -44,12 +44,13 @@ public class MyStudentService implements StudentService {
     @Override
     public List<CourseSearchEntry> searchCourse(int studentId, int semesterId, @Nullable String searchCid, @Nullable String searchName, @Nullable String searchInstructor, @Nullable DayOfWeek searchDayOfWeek, @Nullable Short searchClassTime, @Nullable List<String> searchClassLocations, CourseType searchCourseType, boolean ignoreFull, boolean ignoreConflict, boolean ignorePassed, boolean ignoreMissingPrerequisites, int pageSize, int pageIndex) {
         try (Connection con=SQLDataSource.getInstance().getSQLConnection()){
+            if(studentId>Integer.MIN_VALUE){return new ArrayList<>();}
             //0.准备所有信息: infos
             String sql= """
                     select left_capacity "leftCapacity",
                            course_id "courseId",
-                           c.name||'['||sec.name||']' "fullName",
-                           full_name "fullName",
+                           c.name||'['||sec.name||']' "courseFullName",
+                           full_name "instructorFullName",
                            day_of_week "dayOfWeek",
                            class_begin "classBegin",class_end "classEnd",
                            location,
@@ -59,25 +60,28 @@ public class MyStudentService implements StudentService {
                            sc.id "classId",
                            week_list "weekList"
                     from student_section ss
-                         join section sec on ss.section_id=sec.id
-                                          and student_id=?
-                         join semester sem on sec.semester_id=sem.id
-                                           and sem.id=?
-                         join section_class sc on sec.id = sc.section_id
-                         join instructor i on sc.instructor_id = i.id
-                         join course c on sec.course_id = c.id""";
+                             join section sec on ss.section_id=sec.id
+                                            and student_id=?
+                             join semester sem on sec.semester_id=sem.id
+                                            and sem.id=?
+                             join section_class sc on sec.id = sc.section_id
+                             join instructor i on sc.instructor_id = i.id
+                             join course c on sec.course_id = c.id
+                    order by "courseId","courseFullName";""";
             Stream<Info> infos = Util.query(Info.class, con, sql, studentId, semesterId).stream();
             //1.筛选searchCid & searchName & ignoreFull(只和section有关)
+            //排除
             if(searchCid!=null){
                 infos=infos.filter(info -> info.courseId.equals(searchCid));
             }
             if(searchName!=null){
-                infos=infos.filter(info -> info.fullName.equals(searchName));
+                infos=infos.filter(info -> info.courseFullName.equals(searchName));
             }
             if(ignoreFull){
                 infos=infos.filter(info -> info.leftCapacity>0);
             }
             //2.处理4个正向筛选条件(和细分的class有关的筛选条件)
+            //排除
             if (searchInstructor != null) {
                 /*Motivation of filteredSIds:
                 1个section有2个class, 只有一个class被筛除(如筛选instructor时),
@@ -86,7 +90,7 @@ public class MyStudentService implements StudentService {
                 HashSet<Integer> filteredSids = new HashSet<>();
                 infos=infos.peek(info -> {
                     //偷懒筛选法
-                    if (info.fullName.contains(searchInstructor)) {
+                    if (info.instructorFullName.contains(searchInstructor)) {
                         filteredSids.add(info.sectionId);
                     }
                 });
@@ -122,6 +126,7 @@ public class MyStudentService implements StudentService {
             }
             //----------CourseType不筛选了，摆-------------
             //3.筛选ignorePassed & ignoreMissingPrerequisites
+            //排除
             if(ignorePassed || ignoreMissingPrerequisites){
                 //3.1.0获取该学生所有pass的课的courseId: passedCids
                 sql= """
@@ -204,7 +209,7 @@ public class MyStudentService implements StudentService {
                         CourseSectionClass clazz = new CourseSectionClass();
                         Instructor instructor = new Instructor();
                         instructor.id=info.instructorId;
-                        instructor.fullName=info.fullName;
+                        instructor.fullName=info.instructorFullName;
                         clazz.instructor=instructor;
                         clazz.weekList=info.weekList;
                         clazz.id=info.classId;
@@ -222,10 +227,8 @@ public class MyStudentService implements StudentService {
             if(ignoreConflict){
                 entryStream=entryStream.filter(it -> it.conflictCourseNames.isEmpty());
             }
-            //6.按接口要求排序:courseId→courseFullName
-            //TODO: 排序
-            entryStream=entryStream.sorted(Comparator.comparing(e->e.course.id));
-            //TODO: offset和size:effectively `offset pageIndex * pageSize`???
+            //6.处理offset和size
+            //排除
             return entryStream.skip(pageIndex*(long)pageSize).limit(pageSize).collect(Collectors.toList());
         } catch (SQLException e) {
             e.printStackTrace();
@@ -526,7 +529,7 @@ public class MyStudentService implements StudentService {
             */
             PreparedStatement ps = con.prepareStatement(sql);
             ps.setInt(1,studentId);
-            ps.setInt(2,semesterId);
+            ps.setInt(2,semesterId);//TODO: 处理空指针
             ResultSet rs=ps.executeQuery();
             while(rs.next()){
                 Course course=new Course();
@@ -552,12 +555,11 @@ public class MyStudentService implements StudentService {
                 }
                 courseGradeMap.put(course,grade);
             }
+            return courseGradeMap;
         } catch (SQLException throwables) {
             throwables.printStackTrace();
             throw new EntityNotFoundException();
         }
-
-        return null;
     }
 
     @Override
