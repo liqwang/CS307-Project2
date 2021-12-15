@@ -13,24 +13,22 @@ import java.util.List;
 
 @ParametersAreNonnullByDefault
 public class MySemesterService implements SemesterService {
-    Connection con;
-    {
-        try {
-            con = SQLDataSource.getInstance().getSQLConnection();
+
+    @Override
+    public int addSemester(String name, Date begin, Date end) {
+        try (Connection con=SQLDataSource.getInstance().getSQLConnection()){
+            String sql="insert into semester(name, begin_time, end_time) values (?,?,?)";
+            return Util.addAndGetKey(con, sql, name, begin, end);
         } catch (SQLException e) {
             e.printStackTrace();
+            System.exit(1);
+            return -1;
         }
     }
 
     @Override
-    public int addSemester(String name, Date begin, Date end) {
-        String sql="insert into semester(name, begin_time, end_time) values (?,?,?)";
-        return Util.addAndGetKey(con, sql, name, begin, end);
-    }
-
-    @Override
     public void removeSemester(int semesterId) {
-        try{
+        try(Connection con=SQLDataSource.getInstance().getSQLConnection()){
             // 先删除相关选课记录，再删除学期
             String sql1 = "delete from section where semester_id = ?";
             Util.update(con, sql1, semesterId);
@@ -38,15 +36,16 @@ public class MySemesterService implements SemesterService {
             PreparedStatement ps2 = con.prepareStatement(sql2);
                 ps2.setInt(1, semesterId);
             ps2.executeUpdate();
-        }catch(SQLException throwables){
-            throwables.printStackTrace();
+        }catch(SQLException e){
+            e.printStackTrace();
+            System.exit(1);
         }
     }
 
     @Override
     public List<Semester> getAllSemesters() {
         ArrayList<Semester> semesters = new ArrayList<>();
-        try{
+        try(Connection con=SQLDataSource.getInstance().getSQLConnection()){
             String sql="select * from semester";
             PreparedStatement ps = con.prepareStatement(sql);
             ResultSet rs = ps.executeQuery();
@@ -62,15 +61,16 @@ public class MySemesterService implements SemesterService {
                 sem.end=end;
                 semesters.add(sem);
             }
-            ps.close();
-        } catch (Exception throwables) {
-            throwables.printStackTrace();
+            return semesters;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.exit(1);
+            return null;
         }
-        return semesters;
     }
 
     @Override
-    public Semester getSemester(int semesterId) { //可能有bug（关于丢出错误）
+    public Semester getSemester(int semesterId) {
         try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
             String sql="select * from semester where id = ?";
             PreparedStatement ps = con.prepareStatement(sql);
@@ -87,9 +87,8 @@ public class MySemesterService implements SemesterService {
             sem.end=end;
             ps.close();
             return sem;
-
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
+        } catch (SQLException e) {
+            e.printStackTrace();
             throw new EntityNotFoundException();
         }
     }

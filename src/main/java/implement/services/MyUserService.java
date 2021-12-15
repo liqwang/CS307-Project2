@@ -11,32 +11,26 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MyUserService implements UserService {
-    Connection con;
-    {
-        try {
-            con = SQLDataSource.getInstance().getSQLConnection();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
     //✔
     @Override
     public void removeUser(int userId) {
-        try{
+        try(Connection con=SQLDataSource.getInstance().getSQLConnection()){
             String sql1 = "delete from student where id = ?";
             String sql2 = "delete from instructor where id = ?";
             if(Util.update(con, sql1, userId)+
                Util.update(con, sql2, userId)==0){
                 throw new EntityNotFoundException();
             }
-        }catch (SQLException throwables) {
-            throwables.printStackTrace();
+        }catch (SQLException e) {
+            e.printStackTrace();
+            System.exit(1);
         }
     }
 
     @Override
     public List<User> getAllUsers() {
-        ArrayList<User> users = new ArrayList<>();
+        try (Connection con=SQLDataSource.getInstance().getSQLConnection()){
+            ArrayList<User> users = new ArrayList<>();
             String sql1 = """
                     select enrolled_date "enrolledDate",
                            major_id "major",
@@ -50,18 +44,29 @@ public class MyUserService implements UserService {
                            full_name "fullName"
                     from instructor;""";
             ArrayList<Instructor> ins = Util.query(Instructor.class, con, sql2);
-        users.addAll(stu);
-        users.addAll(ins);
-        return users;
+            users.addAll(stu);
+            users.addAll(ins);
+            return users;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.exit(1);
+            return null;
+        }
     }
 
     @Override
     public User getUser(int userId) {
-        String sql1 = "select * from student where id = ?";
-        ArrayList<Student> stu = Util.query(Student.class, con ,sql1, userId);
-        ArrayList<Instructor> ins = Util.query(Instructor.class, con ,sql1, userId);
-        if(!stu.isEmpty()) return stu.get(0);
-        else if(!ins.isEmpty()) return ins.get(0);
-        else throw new EntityNotFoundException();
+        try (Connection con=SQLDataSource.getInstance().getSQLConnection()){
+            String sql1 = "select * from student where id = ?";
+            ArrayList<Student> stu = Util.query(Student.class, con ,sql1, userId);
+            ArrayList<Instructor> ins = Util.query(Instructor.class, con ,sql1, userId);
+            if(!stu.isEmpty()) return stu.get(0);
+            else if(!ins.isEmpty()) return ins.get(0);
+            else throw new EntityNotFoundException();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.exit(1);
+            return null;
+        }
     }
 }

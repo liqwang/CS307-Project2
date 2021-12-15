@@ -18,18 +18,10 @@ import java.util.List;
 
 @ParametersAreNonnullByDefault
 public class MyMajorService implements MajorService {
-    Connection con;
-    {
-        try {
-            con = SQLDataSource.getInstance().getSQLConnection();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
 
     @Override
     public int addMajor(String name, int departmentId) {
-        try{
+        try(Connection con=SQLDataSource.getInstance().getSQLConnection()){
             String sql="insert into major(name, department_id) values (?,?)";
             PreparedStatement ps = con.prepareStatement(sql,PreparedStatement.RETURN_GENERATED_KEYS);
             ps.setString(1,name);
@@ -38,8 +30,8 @@ public class MyMajorService implements MajorService {
             ResultSet rs=ps.getGeneratedKeys();
             rs.next();
             return rs.getInt(1);
-        }catch (SQLException throwables) {
-            throwables.printStackTrace();
+        }catch (SQLException e) {
+            e.printStackTrace();
             throw new IntegrityViolationException();
         }
     }
@@ -59,8 +51,8 @@ public class MyMajorService implements MajorService {
             PreparedStatement ps3 = con.prepareStatement(sql3);
             ps3.setInt(1,majorId);
             ps3.executeUpdate();
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
+        } catch (SQLException e) {
+            e.printStackTrace();
             throw new EntityNotFoundException();
         }
     }
@@ -115,17 +107,18 @@ public class MyMajorService implements MajorService {
     @Override
     public void addMajorCompulsoryCourse(int majorId, String courseId) {
         String sql = "insert into major_course values (?, ?, true)";
-        try {
+        try (Connection con=SQLDataSource.getInstance().getSQLConnection()){
             Util.update(con, sql, majorId, courseId);
         } catch (SQLException e) {
             e.printStackTrace();
+            System.exit(1);
         }
     }
 
     @Override
     public void addMajorElectiveCourse(int majorId, String courseId) {
         String sql = "insert into major_course values (?, ?, false)";
-        try {
+        try (Connection con=SQLDataSource.getInstance().getSQLConnection()){
             Util.update(con, sql, majorId, courseId);
         } catch (SQLException e) {
             e.printStackTrace();

@@ -23,15 +23,6 @@ import java.util.stream.Stream;
 
 @ParametersAreNonnullByDefault
 public class MyStudentService implements StudentService {
-    public Connection con;
-
-    {
-        try {
-            con = SQLDataSource.getInstance().getSQLConnection();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
 
     @Override
     public void addStudent(int userId, int majorId, String firstName, String lastName, Date enrolledDate) {
@@ -52,194 +43,200 @@ public class MyStudentService implements StudentService {
      */
     @Override
     public List<CourseSearchEntry> searchCourse(int studentId, int semesterId, @Nullable String searchCid, @Nullable String searchName, @Nullable String searchInstructor, @Nullable DayOfWeek searchDayOfWeek, @Nullable Short searchClassTime, @Nullable List<String> searchClassLocations, CourseType searchCourseType, boolean ignoreFull, boolean ignoreConflict, boolean ignorePassed, boolean ignoreMissingPrerequisites, int pageSize, int pageIndex) {
-        //0.准备所有信息: infos
-        String sql= """
-                select left_capacity "leftCapacity",
-                       course_id "courseId",
-                       c.name||'['||sec.name||']' "fullName",
-                       full_name "fullName",
-                       day_of_week "dayOfWeek",
-                       class_begin "classBegin",class_end "classEnd",
-                       location,
-                       is_pf grading,
-                       sec.id "sectionId",
-                       instructor_id "instructorId",
-                       sc.id "classId",
-                       week_list "weekList"
-                from student_section ss
-                     join section sec on ss.section_id=sec.id
-                                      and student_id=?
-                     join semester sem on sec.semester_id=sem.id
-                                       and sem.id=?
-                     join section_class sc on sec.id = sc.section_id
-                     join instructor i on sc.instructor_id = i.id
-                     join course c on sec.course_id = c.id""";
-        Stream<Info> infos = Util.query(Info.class, con, sql, studentId, semesterId).stream();
-        //1.筛选searchCid & searchName & ignoreFull(只和section有关)
-        if(searchCid!=null){
-            infos=infos.filter(info -> info.courseId.equals(searchCid));
-        }
-        if(searchName!=null){
-            infos=infos.filter(info -> info.fullName.equals(searchName));
-        }
-        if(ignoreFull){
-            infos=infos.filter(info -> info.leftCapacity>0);
-        }
-        //2.处理4个正向筛选条件(和细分的class有关的筛选条件)
-        if (searchInstructor != null) {
-            /*Motivation of filteredSIds:
-            1个section有2个class, 只有一个class被筛除(如筛选instructor时),
-            正确结果应该是该section被筛除，但是只筛选infos无法做到这一点
-             */
-            HashSet<Integer> filteredSids = new HashSet<>();
-            infos=infos.peek(info -> {
-                //偷懒筛选法
-                if (info.fullName.contains(searchInstructor)) {
-                    filteredSids.add(info.sectionId);
-                }
-            });
-            infos = infos.filter(info -> filteredSids.contains(info.sectionId));
-        }
-        if (searchDayOfWeek != null) {
-            HashSet<Integer> filteredSids = new HashSet<>();
-            infos=infos.peek(info -> {
-                if(info.dayOfWeek == searchDayOfWeek){
-                    filteredSids.add(info.sectionId);
-                }
-            });
-            infos=infos.filter(info -> filteredSids.contains(info.sectionId));
-        }
-        if (searchClassTime != null) {
-            HashSet<Integer> filteredSids = new HashSet<>();
-            infos=infos.peek(info -> {
-                if(info.classBegin <= searchClassTime &&
-                   info.classEnd >= searchClassTime){
-                    filteredSids.add(info.sectionId);
-                }
-            });
-            infos = infos.filter(info -> filteredSids.contains(info.sectionId));
-        }
-        if (searchClassLocations != null) {
-            HashSet<Integer> filteredSids = new HashSet<>();
-            infos=infos.peek(info -> {
-                if(searchClassLocations.contains(info.location)){
-                    filteredSids.add(info.sectionId);
-                }
-            });
-            infos = infos.filter(info -> filteredSids.contains(info.sectionId));
-        }
-        //----------CourseType不筛选了，摆-------------
-        //3.筛选ignorePassed & ignoreMissingPrerequisites
-        if(ignorePassed || ignoreMissingPrerequisites){
-            //3.1.0获取该学生所有pass的课的courseId: passedCids
-            sql= """
-                    select distinct course_id
-                    from student_section
-                         join section on section_id = id
-                                     and student_id=?
-                                     and mark>=60""";
-            ArrayList<String> passedCids=Util.query(String.class,con,sql,studentId);
-            //3.1.1筛选ignorePassed
-            if(ignorePassed){
-                infos=infos.filter(info -> !passedCids.contains(info.courseId));
+        try (Connection con=SQLDataSource.getInstance().getSQLConnection()){
+            //0.准备所有信息: infos
+            String sql= """
+                    select left_capacity "leftCapacity",
+                           course_id "courseId",
+                           c.name||'['||sec.name||']' "fullName",
+                           full_name "fullName",
+                           day_of_week "dayOfWeek",
+                           class_begin "classBegin",class_end "classEnd",
+                           location,
+                           is_pf grading,
+                           sec.id "sectionId",
+                           instructor_id "instructorId",
+                           sc.id "classId",
+                           week_list "weekList"
+                    from student_section ss
+                         join section sec on ss.section_id=sec.id
+                                          and student_id=?
+                         join semester sem on sec.semester_id=sem.id
+                                           and sem.id=?
+                         join section_class sc on sec.id = sc.section_id
+                         join instructor i on sc.instructor_id = i.id
+                         join course c on sec.course_id = c.id""";
+            Stream<Info> infos = Util.query(Info.class, con, sql, studentId, semesterId).stream();
+            //1.筛选searchCid & searchName & ignoreFull(只和section有关)
+            if(searchCid!=null){
+                infos=infos.filter(info -> info.courseId.equals(searchCid));
             }
-            //3.1.2筛选ignoreMissingPrerequisites
-            if(ignoreMissingPrerequisites){
-                //Motivation: 为了避免infos中重复的courseId多次检验，优化效率
-                //3.1.2.1首先生成不重复的courseId的HashSet: cids
-                HashSet<String> cids = new HashSet<>();
-                infos=infos.peek(info -> cids.add(info.courseId));
-                //3.1.2.2筛选满足先修课的cids，生成filCids
-                ArrayList<String> filCids = (ArrayList<String>) cids.stream().
-                                            filter(cid -> passedPre(passedCids, cid)).
-                                            collect(Collectors.toList());
-                //3.1.2.3再用filCids筛选infos
-                infos=infos.filter(info -> filCids.contains(info.courseId));
+            if(searchName!=null){
+                infos=infos.filter(info -> info.fullName.equals(searchName));
             }
-        }
-        //4.生成所有CourseSearchEntry: entries
-        ArrayList<CourseSearchEntry> entries = new ArrayList<>();
-        //4.1聚合生成所有的sectionIds
-        HashSet<Integer> sectionIds = new HashSet<>();
-        infos=infos.peek(info -> sectionIds.add(info.sectionId));
-        //4.2将流infos转为List
-        List<Info> information = infos.collect(Collectors.toList());
-        //4.3生成每个entry对象
-        //4.3.0获取该学生本学期已选的课的信息: selectedInfos(被4.3.3使用)
-        sql= """
-                select course_id "courseId",
-                       c.name||'['||s.name||']' "fullName"
-                from student_section
-                     join section s on s.id=section_id
-                                   and semester_id=?
-                                   and student_id=?
-                     join course c on c.id=course_id""";
-        ArrayList<SelectedInfo> selectedInfos = Util.query(SelectedInfo.class,con,sql,semesterId,studentId);
-        for (Integer sectionId : sectionIds) {
-            CourseSearchEntry entry = new CourseSearchEntry();
-            //hasGenerate标记第一次找到该sectionId，因为course和section只需生成一次
-            boolean hasGenerate=false;
-            for (Info info : information) {
-                if(info.sectionId==sectionId){
-                    if(!hasGenerate) {
-                        //4.3.1准备course
-                        sql = """
-                            select id,name,credit,class_hour "classHour",is_pf grading
-                            from course
-                            where id=?""";
-                        entry.course=Util.query(Course.class,con,sql,info.courseId).get(0);
-                        //4.3.2准备section
-                        sql="""
-                            select id,name,total_capacity "totalCapacity",left_capacity "leftCapacity"
-                            from section
-                            where id=?""";
-                        entry.section=Util.query(CourseSection.class,con,sql,sectionId).get(0);
-                        //4.3.3准备conflictCourseNames
-                        ArrayList<String> conflictCourseNames = new ArrayList<>();
-                        //4.3.3.1课程冲突
-                        for (SelectedInfo it : selectedInfos) {
-                            if(it.courseId.equals(entry.course.id)){
-                                conflictCourseNames.add(it.fullName);
-                                break;
-                            }
-                        }
-                        //4.3.3.2-------------时间冲突，摆---------------
-                        entry.conflictCourseNames=conflictCourseNames;
-                        hasGenerate=true;
+            if(ignoreFull){
+                infos=infos.filter(info -> info.leftCapacity>0);
+            }
+            //2.处理4个正向筛选条件(和细分的class有关的筛选条件)
+            if (searchInstructor != null) {
+                /*Motivation of filteredSIds:
+                1个section有2个class, 只有一个class被筛除(如筛选instructor时),
+                正确结果应该是该section被筛除，但是只筛选infos无法做到这一点
+                 */
+                HashSet<Integer> filteredSids = new HashSet<>();
+                infos=infos.peek(info -> {
+                    //偷懒筛选法
+                    if (info.fullName.contains(searchInstructor)) {
+                        filteredSids.add(info.sectionId);
                     }
-                    //4.3.4准备sectionClasses
-                    CourseSectionClass clazz = new CourseSectionClass();
-                    Instructor instructor = new Instructor();
-                    instructor.id=info.instructorId;
-                    instructor.fullName=info.fullName;
-                    clazz.instructor=instructor;
-                    clazz.weekList=info.weekList;
-                    clazz.id=info.classId;
-                    clazz.dayOfWeek=info.dayOfWeek;
-                    clazz.classBegin=info.classBegin;
-                    clazz.classEnd=info.classEnd;
-                    clazz.location=info.location;
-                    entry.sectionClasses.add(clazz);
+                });
+                infos = infos.filter(info -> filteredSids.contains(info.sectionId));
+            }
+            if (searchDayOfWeek != null) {
+                HashSet<Integer> filteredSids = new HashSet<>();
+                infos=infos.peek(info -> {
+                    if(info.dayOfWeek == searchDayOfWeek){
+                        filteredSids.add(info.sectionId);
+                    }
+                });
+                infos=infos.filter(info -> filteredSids.contains(info.sectionId));
+            }
+            if (searchClassTime != null) {
+                HashSet<Integer> filteredSids = new HashSet<>();
+                infos=infos.peek(info -> {
+                    if(info.classBegin <= searchClassTime &&
+                       info.classEnd >= searchClassTime){
+                        filteredSids.add(info.sectionId);
+                    }
+                });
+                infos = infos.filter(info -> filteredSids.contains(info.sectionId));
+            }
+            if (searchClassLocations != null) {
+                HashSet<Integer> filteredSids = new HashSet<>();
+                infos=infos.peek(info -> {
+                    if(searchClassLocations.contains(info.location)){
+                        filteredSids.add(info.sectionId);
+                    }
+                });
+                infos = infos.filter(info -> filteredSids.contains(info.sectionId));
+            }
+            //----------CourseType不筛选了，摆-------------
+            //3.筛选ignorePassed & ignoreMissingPrerequisites
+            if(ignorePassed || ignoreMissingPrerequisites){
+                //3.1.0获取该学生所有pass的课的courseId: passedCids
+                sql= """
+                        select distinct course_id
+                        from student_section
+                             join section on section_id = id
+                                         and student_id=?
+                                         and mark>=60""";
+                ArrayList<String> passedCids=Util.query(String.class,con,sql,studentId);
+                //3.1.1筛选ignorePassed
+                if(ignorePassed){
+                    infos=infos.filter(info -> !passedCids.contains(info.courseId));
+                }
+                //3.1.2筛选ignoreMissingPrerequisites
+                if(ignoreMissingPrerequisites){
+                    //Motivation: 为了避免infos中重复的courseId多次检验，优化效率
+                    //3.1.2.1首先生成不重复的courseId的HashSet: cids
+                    HashSet<String> cids = new HashSet<>();
+                    infos=infos.peek(info -> cids.add(info.courseId));
+                    //3.1.2.2筛选满足先修课的cids，生成filCids
+                    ArrayList<String> filCids = (ArrayList<String>) cids.stream().
+                                                filter(cid -> passedPre(passedCids, cid)).
+                                                collect(Collectors.toList());
+                    //3.1.2.3再用filCids筛选infos
+                    infos=infos.filter(info -> filCids.contains(info.courseId));
                 }
             }
-            entries.add(entry);
+            //4.生成所有CourseSearchEntry: entries
+            ArrayList<CourseSearchEntry> entries = new ArrayList<>();
+            //4.1聚合生成所有的sectionIds
+            HashSet<Integer> sectionIds = new HashSet<>();
+            infos=infos.peek(info -> sectionIds.add(info.sectionId));
+            //4.2将流infos转为List
+            List<Info> information = infos.collect(Collectors.toList());
+            //4.3生成每个entry对象
+            //4.3.0获取该学生本学期已选的课的信息: selectedInfos(被4.3.3使用)
+            sql= """
+                    select course_id "courseId",
+                           c.name||'['||s.name||']' "fullName"
+                    from student_section
+                         join section s on s.id=section_id
+                                       and semester_id=?
+                                       and student_id=?
+                         join course c on c.id=course_id""";
+            ArrayList<SelectedInfo> selectedInfos = Util.query(SelectedInfo.class,con,sql,semesterId,studentId);
+            for (Integer sectionId : sectionIds) {
+                CourseSearchEntry entry = new CourseSearchEntry();
+                //hasGenerate标记第一次找到该sectionId，因为course和section只需生成一次
+                boolean hasGenerate=false;
+                for (Info info : information) {
+                    if(info.sectionId==sectionId){
+                        if(!hasGenerate) {
+                            //4.3.1准备course
+                            sql = """
+                                select id,name,credit,class_hour "classHour",is_pf grading
+                                from course
+                                where id=?""";
+                            entry.course=Util.query(Course.class,con,sql,info.courseId).get(0);
+                            //4.3.2准备section
+                            sql="""
+                                select id,name,total_capacity "totalCapacity",left_capacity "leftCapacity"
+                                from section
+                                where id=?""";
+                            entry.section=Util.query(CourseSection.class,con,sql,sectionId).get(0);
+                            //4.3.3准备conflictCourseNames
+                            ArrayList<String> conflictCourseNames = new ArrayList<>();
+                            //4.3.3.1课程冲突
+                            for (SelectedInfo it : selectedInfos) {
+                                if(it.courseId.equals(entry.course.id)){
+                                    conflictCourseNames.add(it.fullName);
+                                    break;
+                                }
+                            }
+                            //4.3.3.2-------------时间冲突，摆---------------
+                            entry.conflictCourseNames=conflictCourseNames;
+                            hasGenerate=true;
+                        }
+                        //4.3.4准备sectionClasses
+                        CourseSectionClass clazz = new CourseSectionClass();
+                        Instructor instructor = new Instructor();
+                        instructor.id=info.instructorId;
+                        instructor.fullName=info.fullName;
+                        clazz.instructor=instructor;
+                        clazz.weekList=info.weekList;
+                        clazz.id=info.classId;
+                        clazz.dayOfWeek=info.dayOfWeek;
+                        clazz.classBegin=info.classBegin;
+                        clazz.classEnd=info.classEnd;
+                        clazz.location=info.location;
+                        entry.sectionClasses.add(clazz);
+                    }
+                }
+                entries.add(entry);
+            }
+            //5.筛选ignoreConflict
+            Stream<CourseSearchEntry> entryStream = entries.stream();
+            if(ignoreConflict){
+                entryStream=entryStream.filter(it -> it.conflictCourseNames.isEmpty());
+            }
+            //6.按接口要求排序:courseId→courseFullName
+            //TODO: 排序
+            entryStream=entryStream.sorted(Comparator.comparing(e->e.course.id));
+            //TODO: offset和size:effectively `offset pageIndex * pageSize`???
+            return entryStream.skip(pageIndex*(long)pageSize).limit(pageSize).collect(Collectors.toList());
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.exit(1);
+            return null;
         }
-        //5.筛选ignoreConflict
-        Stream<CourseSearchEntry> entryStream = entries.stream();
-        if(ignoreConflict){
-            entryStream=entryStream.filter(it -> it.conflictCourseNames.isEmpty());
-        }
-        //6.按接口要求排序:courseId→courseFullName
-        //TODO: 排序
-        entryStream=entryStream.sorted(Comparator.comparing(e->e.course.id));
-        //TODO: offset和size:effectively `offset pageIndex * pageSize`???
-        return entryStream.skip(pageIndex*(long)pageSize).limit(pageSize).collect(Collectors.toList());
     }
 
     @Override
     public EnrollResult enrollCourse(int studentId, int sectionId) {
         //2&3&5.1这三种情况要区分开
-        try{
+        try(Connection con=SQLDataSource.getInstance().getSQLConnection()){
             //1.班级不存在
             String sql1 = "select left_capacity from section where id=?";
             ArrayList<Integer> capacity = Util.querySingle(con, sql1, sectionId);
@@ -351,6 +348,13 @@ public class MyStudentService implements StudentService {
 
     @Override
     public void dropCourse(int studentId, int sectionId) throws IllegalStateException {
+        Connection con = null;
+        try {
+            con = SQLDataSource.getInstance().getSQLConnection();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
         String sql="select mark from student_section where student_id=? and section_id=?";
         ArrayList<Integer> res=Util.querySingle(con,sql,studentId,sectionId);
         if(res.isEmpty()){
@@ -363,6 +367,7 @@ public class MyStudentService implements StudentService {
         try {
             Util.update(con,sql,studentId,sectionId);
             updateLeftCapacity(con,sectionId,false);
+            con.close();
         } catch (SQLException e) {
             e.printStackTrace();
             System.exit(1);
@@ -372,7 +377,7 @@ public class MyStudentService implements StudentService {
     @Override
     public void addEnrolledCourseWithGrade(int studentId, int sectionId, @Nullable Grade grade) {
         //不要修改left_capacity
-        try{
+        try(Connection con=SQLDataSource.getInstance().getSQLConnection()){
             int mark;
             String sql1= """
                     select distinct s.id,
@@ -567,7 +572,7 @@ public class MyStudentService implements StudentService {
     public CourseTable getCourseTable(int studentId, Date date) {
         CourseTable ct = new CourseTable();
         ct.table=new HashMap<>();
-        try{
+        try(Connection con=SQLDataSource.getInstance().getSQLConnection()){
             String sql = """
                     select c.name, s.name, sc.instructor_id, i.full_name, sc.class_begin, sc.class_end, location, sc.day_of_week
                     from student
@@ -642,73 +647,79 @@ public class MyStudentService implements StudentService {
      * 用于复用的辅助判断方法，判断passedCids是否满足了courseId的先修课要求
      */
     public boolean passedPre(ArrayList<String> passedCids,String courseId){
-        //1.获取布尔表达式
-        //1.1获取先修课String: pre
-        String sql="select prerequisite from course where id=?";
-        String pre = (String)Util.querySingle(con, sql, courseId).get(0);
-        if(pre==null){return true;}
-        //1.2提取出pre中的课程id: eg:((MA101A OR MA101B) AND MA103A)
-        String[] preCids = pre.split(" (AND|OR) ");// ((MA101A MA101B) MA103A)
-        for (int i = 0; i < preCids.length; i++) {
-            preCids[i]=preCids[i].replaceAll("[()]","");
-        }//去除括号: MA101A MA101B MA103A
-        //1.3将pre转为布尔表达式
-        pre=pre.replace(" AND ","&").replace(" OR ","|");
-        for (String preCid : preCids) {
-            pre=pre.replace(preCid,passedCids.contains(preCid)?"T":"F");
-        }
-        //2.计算布尔表达式pre: ((T|F)&T)
-        //2.1用逆波兰算法将pre转为后缀表达式postfix: TF|T&
-        Stack<Character> stack = new Stack<>();
-        StringBuilder postfix = new StringBuilder();
-        for (char c : pre.toCharArray()) {
-            switch (c) {
-                case '(' -> stack.push('(');
-                case ')' -> {
-                    char top;
-                    while ((top = stack.pop()) != '(') {
-                        postfix.append(top);
-                    }
-                }
-                case '&' -> {
-                    if (!stack.isEmpty() && stack.peek() == '&') {
-                        postfix.append(stack.pop());
-                    }
-                    stack.push('&');
-                }
-                case '|' -> {
-                    if (!stack.isEmpty() && stack.peek() == '&') {
-                        postfix.append(stack.pop());
-                    }
-                    if (!stack.isEmpty() && stack.peek() == '|') {
-                        postfix.append(stack.pop());
-                    }
-                    stack.push('|');
-                }
-                default -> postfix.append(c);//对应于T,F
+        try (Connection con=SQLDataSource.getInstance().getSQLConnection()){
+            //1.获取布尔表达式
+            //1.1获取先修课String: pre
+            String sql="select prerequisite from course where id=?";
+            String pre = (String)Util.querySingle(con, sql, courseId).get(0);
+            if(pre==null){return true;}
+            //1.2提取出pre中的课程id: eg:((MA101A OR MA101B) AND MA103A)
+            String[] preCids = pre.split(" (AND|OR) ");// ((MA101A MA101B) MA103A)
+            for (int i = 0; i < preCids.length; i++) {
+                preCids[i]=preCids[i].replaceAll("[()]","");
+            }//去除括号: MA101A MA101B MA103A
+            //1.3将pre转为布尔表达式
+            pre=pre.replace(" AND ","&").replace(" OR ","|");
+            for (String preCid : preCids) {
+                pre=pre.replace(preCid,passedCids.contains(preCid)?"T":"F");
             }
-        }
-        while (!stack.isEmpty()){
-            postfix.append(stack.pop());
-        }
-        //2.2用栈计算后缀表达式postfix: TF|T&
-        Stack<Boolean> stack2 = new Stack<>();
-        for (char c : postfix.toString().toCharArray()) {
-            switch (c){
-                case '|' -> stack2.push(stack2.pop() | stack2.pop());
-                //注意这里不能用||，否则可能只pop一个，出现bug
-                case '&' -> stack2.push(stack2.pop() & stack2.pop());
-                //注意这里不能用&&，否则可能只pop一个，出现bug
-                case 'T' -> stack2.push(true);
-                case 'F' -> stack2.push(false);
+            //2.计算布尔表达式pre: ((T|F)&T)
+            //2.1用逆波兰算法将pre转为后缀表达式postfix: TF|T&
+            Stack<Character> stack = new Stack<>();
+            StringBuilder postfix = new StringBuilder();
+            for (char c : pre.toCharArray()) {
+                switch (c) {
+                    case '(' -> stack.push('(');
+                    case ')' -> {
+                        char top;
+                        while ((top = stack.pop()) != '(') {
+                            postfix.append(top);
+                        }
+                    }
+                    case '&' -> {
+                        if (!stack.isEmpty() && stack.peek() == '&') {
+                            postfix.append(stack.pop());
+                        }
+                        stack.push('&');
+                    }
+                    case '|' -> {
+                        if (!stack.isEmpty() && stack.peek() == '&') {
+                            postfix.append(stack.pop());
+                        }
+                        if (!stack.isEmpty() && stack.peek() == '|') {
+                            postfix.append(stack.pop());
+                        }
+                        stack.push('|');
+                    }
+                    default -> postfix.append(c);//对应于T,F
+                }
             }
+            while (!stack.isEmpty()){
+                postfix.append(stack.pop());
+            }
+            //2.2用栈计算后缀表达式postfix: TF|T&
+            Stack<Boolean> stack2 = new Stack<>();
+            for (char c : postfix.toString().toCharArray()) {
+                switch (c){
+                    case '|' -> stack2.push(stack2.pop() | stack2.pop());
+                    //注意这里不能用||，否则可能只pop一个，出现bug
+                    case '&' -> stack2.push(stack2.pop() & stack2.pop());
+                    //注意这里不能用&&，否则可能只pop一个，出现bug
+                    case 'T' -> stack2.push(true);
+                    case 'F' -> stack2.push(false);
+                }
+            }
+            return stack2.pop();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.exit(1);
+            return false;
         }
-        return stack2.pop();
     }
 
     @Override
     public Major getStudentMajor(int studentId) {
-        try{
+        try(Connection con=SQLDataSource.getInstance().getSQLConnection()){
             String sql = """
                     select m.id, m.name, m.department_id
                     from student join major m on m.id = student.major_id

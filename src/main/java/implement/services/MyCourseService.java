@@ -18,78 +18,81 @@ import java.util.*;
 
 @ParametersAreNonnullByDefault
 public class MyCourseService implements CourseService {
-    Connection con;
-    {
-        try {
-            con = SQLDataSource.getInstance().getSQLConnection();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
 
     //完成√
     @Override
     public void addCourse(String courseId, String courseName, int credit, int classHour, Course.CourseGrading grading, @Nullable Prerequisite prerequisite) {
-        String sql="insert into course(id, name, credit, class_hour, is_pf, prerequisite) values (?,?,?,?,?,?)";
-        String preStr = prerequisite==null?null:prerequisite.when(new Prerequisite.Cases<>() {
-                @Override
-                public String match(AndPrerequisite self) {
-                    String[] children = self.terms.stream()
-                            .map(term -> term.when(this))
-                            .toArray(String[]::new);
-                    return '(' + String.join(" AND ", children) + ')';
-                }
+        try (Connection con=SQLDataSource.getInstance().getSQLConnection()){
+            String sql="insert into course(id, name, credit, class_hour, is_pf, prerequisite) values (?,?,?,?,?,?)";
+            String preStr = prerequisite==null?null:prerequisite.when(new Prerequisite.Cases<>() {
+                    @Override
+                    public String match(AndPrerequisite self) {
+                        String[] children = self.terms.stream()
+                                .map(term -> term.when(this))
+                                .toArray(String[]::new);
+                        return '(' + String.join(" AND ", children) + ')';
+                    }
 
-                @Override
-                public String match(OrPrerequisite self) {
-                    String[] children = self.terms.stream()
-                            .map(term -> term.when(this))
-                            .toArray(String[]::new);
-                    return '(' + String.join(" OR ", children) + ')';
-                }
+                    @Override
+                    public String match(OrPrerequisite self) {
+                        String[] children = self.terms.stream()
+                                .map(term -> term.when(this))
+                                .toArray(String[]::new);
+                        return '(' + String.join(" OR ", children) + ')';
+                    }
 
-                @Override
-                public String match(CoursePrerequisite self) {
-                    return self.courseID;
-                }
-            });
-        try{
-            Util.update(con,sql, courseId,
-                                         courseName,
-                                         credit,
-                                         classHour,
-                                         grading==Course.CourseGrading.PASS_OR_FAIL,
-                                         preStr
-            );
+                    @Override
+                    public String match(CoursePrerequisite self) {
+                        return self.courseID;
+                    }
+                });
+            try{
+                Util.update(con,sql, courseId,
+                                             courseName,
+                                             credit,
+                                             classHour,
+                                             grading==Course.CourseGrading.PASS_OR_FAIL,
+                                             preStr
+                );
+            } catch (SQLException e) {
+                e.printStackTrace();
+                throw new IntegrityViolationException();
+            }
         } catch (SQLException e) {
             e.printStackTrace();
-            throw new IntegrityViolationException();
+            System.exit(1);
         }
     }
 
     //完成√
     @Override
     public int addCourseSection(String courseId, int semesterId, String sectionName, int totalCapacity) {
-        String sql="insert into section (course_id,semester_id,name,total_capacity,left_capacity) values (?,?,?,?,?)";
-        return Util.addAndGetKey(con,sql, courseId,
-                                          semesterId,
-                                          sectionName,
-                                          totalCapacity,
-                                          totalCapacity);
+        try (Connection con=SQLDataSource.getInstance().getSQLConnection()){
+            String sql="insert into section (course_id,semester_id,name,total_capacity,left_capacity) values (?,?,?,?,?)";
+            return Util.addAndGetKey(con,sql, courseId,
+                                              semesterId,
+                                              sectionName,
+                                              totalCapacity,
+                                              totalCapacity);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.exit(1);
+            return -1;
+        }
     }
 
     //完成√
     @Override
     public int addCourseSectionClass(int sectionId, int instructorId, DayOfWeek dayOfWeek, Set<Short> weekList, short classStart, short classEnd, String location) {
-        String sql="insert into section_class(section_id, instructor_id, day_of_week, class_begin, class_end, location, week_list) values (?,?,?,?,?,?,?)";
-        try {
-            return Util.addAndGetKey(con,sql,sectionId,
-                                             instructorId,
-                                             dayOfWeek.getValue(),
-                                             classStart,
-                                             classEnd,
-                                             location,
-                                             con.createArrayOf("smallint", weekList.toArray()));
+        try (Connection con=SQLDataSource.getInstance().getSQLConnection()){
+            String sql = "insert into section_class(section_id, instructor_id, day_of_week, class_begin, class_end, location, week_list) values (?,?,?,?,?,?,?)";
+            return Util.addAndGetKey(con, sql, sectionId,
+                                                instructorId,
+                                                dayOfWeek.getValue(),
+                                                classStart,
+                                                classEnd,
+                                                location,
+                                                con.createArrayOf("smallint", weekList.toArray()));
         } catch (SQLException e) {
             e.printStackTrace();
             System.exit(1);
@@ -100,7 +103,7 @@ public class MyCourseService implements CourseService {
     //完成√
     @Override
     public void removeCourse(String courseId) {
-        try{String sql1= """
+        try(Connection con=SQLDataSource.getInstance().getSQLConnection()){String sql1= """
                 delete
                 from section_class
                 where id in (select section_class.id
@@ -137,7 +140,7 @@ public class MyCourseService implements CourseService {
     //完成√
     @Override
     public void removeCourseSection(int sectionId) {
-        try{
+        try(Connection con=SQLDataSource.getInstance().getSQLConnection()){
             String sql1= """
                     delete from section_class where id in(select section_class.id
                     from section_class join section s on s.id = section_class.section_id
@@ -158,7 +161,7 @@ public class MyCourseService implements CourseService {
     //完成√
     @Override
     public void removeCourseSectionClass(int classId) {
-        try{
+        try(Connection con=SQLDataSource.getInstance().getSQLConnection()){
             String sql3="delete from section_class where id=?";
             if(Util.update(con,sql3,classId)==0){
                 throw new EntityNotFoundException();
@@ -172,88 +175,118 @@ public class MyCourseService implements CourseService {
     //完成√
     @Override
     public List<Course> getAllCourses() {
-        String sql= """
-                    select id,
-                           name,
-                           credit,
-                           class_hour "classHour",
-                           is_pf grading
-                    from course;""";
-        return Util.query(Course.class,con,sql);
+        try (Connection con=SQLDataSource.getInstance().getSQLConnection()){
+            String sql= """
+                        select id,
+                               name,
+                               credit,
+                               class_hour "classHour",
+                               is_pf grading
+                        from course;""";
+            return Util.query(Course.class,con,sql);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.exit(1);
+            return null;
+        }
     }
 
     //完成√
     @Override
     public List<CourseSection> getCourseSectionsInSemester(String courseId, int semesterId) {
-        String sql= """
-                    select id,
-                           name,
-                           total_capacity "totalCapacity",
-                           left_capacity "leftCapacity"
-                    from section
-                    where course_id=? and semester_id=?""";
-        ArrayList<CourseSection> res = Util.query(CourseSection.class, con, sql, courseId, semesterId);
-        if(res.isEmpty()){
-            throw new EntityNotFoundException();
+        try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
+            String sql= """
+                        select id,
+                               name,
+                               total_capacity "totalCapacity",
+                               left_capacity "leftCapacity"
+                        from section
+                        where course_id=? and semester_id=?""";
+            ArrayList<CourseSection> res = Util.query(CourseSection.class, con, sql, courseId, semesterId);
+            if(res.isEmpty()){
+                throw new EntityNotFoundException();
+            }
+            return res;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.exit(1);
+            return null;
         }
-        return res;
     }
 
     //完成√
     @Override
     public Course getCourseBySection(int sectionId) {
-        String sql = """
-                select distinct c.id,class_hour "classHour",
-                    c.name,credit,is_pf grading
-                from course c join section s on c.id = s.course_id
-                where s.id=?""";
-        ArrayList<Course> res = Util.query(Course.class, con, sql, sectionId);
-        if (res.isEmpty()) {
-            throw new EntityNotFoundException();
+        try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
+            String sql = """
+                    select distinct c.id,class_hour "classHour",
+                        c.name,credit,is_pf grading
+                    from course c join section s on c.id = s.course_id
+                    where s.id=?""";
+            ArrayList<Course> res = Util.query(Course.class, con, sql, sectionId);
+            if (res.isEmpty()) {
+                throw new EntityNotFoundException();
+            }
+            return res.get(0);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.exit(1);
+            return null;
         }
-        return res.get(0);
     }
 
     //完成√
     @Override
     public List<CourseSectionClass> getCourseSectionClasses(int sectionId) {
-        String sql = """
-                select id,
-                       instructor_id instructor,
-                       day_of_week "dayOfWeek",
-                       week_list "weekList",
-                       class_begin "classBegin",
-                       class_end "classEnd",
-                       location
-                from section_class
-                where id=?;""";
-        ArrayList<CourseSectionClass> res = Util.query(CourseSectionClass.class, con, sql, sectionId);
-        if (res.isEmpty()) {
-            throw new EntityNotFoundException();
+        try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
+            String sql = """
+                    select id,
+                           instructor_id instructor,
+                           day_of_week "dayOfWeek",
+                           week_list "weekList",
+                           class_begin "classBegin",
+                           class_end "classEnd",
+                           location
+                    from section_class
+                    where id=?;""";
+            ArrayList<CourseSectionClass> res = Util.query(CourseSectionClass.class, con, sql, sectionId);
+            if (res.isEmpty()) {
+                throw new EntityNotFoundException();
+            }
+            return res;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.exit(1);
+            return null;
         }
-        return res;
     }
 
     //完成√
     @Override
     public CourseSection getCourseSectionByClass(int classId) {
-        String sql = """
-                    select section_id
-                    from section_class
-                    where id=?
-                """;
-        ArrayList<Integer> id = Util.querySingle(con, sql, classId);
-        if (id.isEmpty()) {
-            throw new EntityNotFoundException();
+        try (Connection con=SQLDataSource.getInstance().getSQLConnection()){
+            String sql = """
+                        select section_id
+                        from section_class
+                        where id=?
+                    """;
+            ArrayList<Integer> id = Util.querySingle(con, sql, classId);
+            if (id.isEmpty()) {
+                throw new EntityNotFoundException();
+            }
+            sql = """
+                    select id,
+                           name,
+                           left_capacity "leftCapacity",
+                           total_capacity "totalCapacity"
+                    from section
+                    where id=?""";
+            return Util.query(CourseSection.class, con, sql, id.get(0)).get(0);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.exit(1);
+            return null;
         }
-        sql = """
-                select id,
-                       name,
-                       left_capacity "leftCapacity",
-                       total_capacity "totalCapacity"
-                from section
-                where id=?""";
-        return Util.query(CourseSection.class, con, sql, id.get(0)).get(0);
     }
 
     @Override
@@ -285,20 +318,20 @@ public class MyCourseService implements CourseService {
             while (rs.next()){
                 Student student = new Student();
                 student.id = rs.getInt(1);
-                String f_name = rs.getString(2);
-                String l_name = rs.getString(3);
+                String firstName = rs.getString(2);
+                String lastName = rs.getString(3);
                 String name;
-                if(f_name.charAt(0) >= 'A' && f_name.charAt(0) <= 'Z')
-                    name = f_name + " " + l_name;
-                else name = f_name + l_name;
+                if(firstName.charAt(0) >= 'A' && firstName.charAt(0) <= 'Z')
+                    name = firstName + " " + lastName;
+                else name = firstName + lastName;
                 student.fullName = name;
                 student.enrolledDate = rs.getDate(4);
                 student.major = major;
                 cs.add(student);
             }
             return cs;
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
+        } catch (SQLException e) {
+            e.printStackTrace();
             throw new EntityNotFoundException();
         }
     }
