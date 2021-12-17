@@ -7,6 +7,8 @@ import cn.edu.sustech.cs307.dto.prerequisite.Prerequisite;
 import cn.edu.sustech.cs307.factory.ServiceFactory;
 import cn.edu.sustech.cs307.service.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import java.io.File;
 import java.io.IOException;
@@ -51,8 +53,43 @@ public final class ProjectJudge {
                     .mapToObj(it -> testSearchCourse(searchCourseParams.get(it)))
                     .collect(Collectors.toUnmodifiableList());
             result.elapsedTimeNs.addAndGet(System.nanoTime() - beforeTime);
+            //TODO: debug
             result.passCount.addAndGet(IntStream.range(0, searchCourseParams.size()).parallel()
                     .filter(it -> searchCourseExpected.get(it).equals(searchCourseResult.get(it))).count());
+//            result.passCount.addAndGet(IntStream.range(0, searchCourseParams.size())
+//                    .filter(it -> {
+//                        if(!searchCourseExpected.get(it).equals(searchCourseResult.get(it)) &&
+//                            searchCourseParams.get(it).get(8)==StudentService.CourseType.ALL){
+//                            System.out.println("错误参数:");
+//                            for (Object o : searchCourseParams.get(it)) {
+//                                System.out.println(o==null?null:o.toString());//可能会有bug
+//                            }
+//                            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+//                            System.out.println("------------------预期查询结果-------------------");
+//                            for (CourseSearchEntry entry : searchCourseExpected.get(it)) {
+////                                System.out.println(gson.toJson(entry));
+//                                System.out.println("sectionId:"+entry.section.id);
+//                                for (CourseSectionClass sectionClass : entry.sectionClasses) {
+//                                    System.out.println(sectionClass.location);
+//                                }
+//                                System.out.println();
+//                            }
+//                            System.out.println("------------------实际查询结果--------------------");
+//                            for (CourseSearchEntry entry : searchCourseResult.get(it)) {
+////                                System.out.println(gson.toJson(entry));
+//                                System.out.println("sectionId:"+entry.section.id);
+//                                System.out.println("total:"+entry.section.totalCapacity+"left:"+entry.section.leftCapacity);
+//                                for (CourseSectionClass sectionClass : entry.sectionClasses) {
+//                                    System.out.println(sectionClass.location);
+//                                    System.out.println("Begin: "+sectionClass.classBegin);
+//                                    System.out.println("End: "+sectionClass.classEnd);
+//                                }
+//                                System.out.println();
+//                            }
+//                            System.exit(1);
+//                            return false;
+//                        }else{return true;}se
+//                    }).count());
         }
         return result;
     }

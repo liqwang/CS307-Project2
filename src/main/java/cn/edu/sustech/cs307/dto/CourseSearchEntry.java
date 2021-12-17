@@ -50,4 +50,19 @@ public class CourseSearchEntry {
     public int hashCode() {
         return Objects.hash(course, section, sectionClasses, conflictCourseNames);
     }
+
+    /*
+    @Override
+    public String toString() {
+        StringBuilder sb= new StringBuilder("CourseSearchEntry{" +
+                "course=" + course.toString() +
+                ", section=" + section.toString() +
+                ", sectionClasses=");
+        for (CourseSectionClass sectionClass : sectionClasses) {
+
+        }
+        sectionClasses +
+                ", conflictCourseNames=" + conflictCourseNames +
+                '}';
+    }*/
 }
