@@ -39,7 +39,7 @@ public class MyInstructorService implements InstructorService {
             String sql = """
                     select i.id,
                            sec.name,
-                           left_capacity "leftCpacity",
+                           left_capacity "leftCapacity",
                            total_capacity "totalCapacity"
                     from instructor i
                          join section_class sc on i.id = sc.instructor_id
