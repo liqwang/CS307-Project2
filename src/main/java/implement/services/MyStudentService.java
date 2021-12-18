@@ -78,51 +78,68 @@ public class MyStudentService implements StudentService {
             }
             List<Info> infoList = infos.collect(Collectors.toList());//Stream→List
             //2.处理4个正向筛选条件(和细分的class有关的筛选条件)
-            if (searchInstructor != null && !searchInstructor.equals("")) {
-                /*Motivation of filteredSIds:
-                1个section有2个class, 只有一个class被筛除(如筛选instructor时),
-                正确结果应该是该section被筛除，但是只筛选infos无法做到这一点
-                 */
-                HashSet<Integer> filteredSids = new HashSet<>();
-                for (Info info : infoList) {
-                    //偷懒筛选法
-                    if (info.instructorFullName.replace(" ","").contains(searchInstructor)) {
-                        filteredSids.add(info.sectionId);
-                    }
-                }
-                infoList.removeIf(info -> !filteredSids.contains(info.sectionId));
-            }
-            if (searchDayOfWeek != null) {
-                HashSet<Integer> filteredSids = new HashSet<>();
-                for (Info info : infoList) {
-                    if(info.dayOfWeek == searchDayOfWeek){
-                        filteredSids.add(info.sectionId);
-                    }
-                }
-                infoList.removeIf(info -> !filteredSids.contains(info.sectionId));
-            }
-            if (searchClassTime != null) {
-                HashSet<Integer> filteredSids = new HashSet<>();
-                for (Info info : infoList) {
-                    if(info.classBegin <= searchClassTime &&
-                            info.classEnd >= searchClassTime){
-                        filteredSids.add(info.sectionId);
-                    }
-                }
-                infoList.removeIf(info -> !filteredSids.contains(info.sectionId));
-            }
-            if (searchClassLocations != null) {
-                HashSet<Integer> filteredSids = new HashSet<>();
-                for (Info info : infoList) {
-                    for (String eachLocation : searchClassLocations) {
-                        if(info.location.contains(eachLocation)){
-                            filteredSids.add(info.sectionId);
-                            break;
+            HashSet<Integer> filteredSids = new HashSet<>();
+            for (Info info : infoList) {
+                if((searchInstructor==null||searchInstructor.equals("")||info.instructorFullName.replace(" ","").contains(searchInstructor.replace(" ","")))&&
+                        (searchDayOfWeek==null||info.dayOfWeek == searchDayOfWeek)&&
+                        (searchClassTime==null||info.classBegin <= searchClassTime && info.classEnd >= searchClassTime)
+                        ){
+                    if(searchClassLocations!=null && !searchClassLocations.isEmpty()){
+                        for (String eachLocation : searchClassLocations) {
+                            if(info.location.contains(eachLocation)){
+                                filteredSids.add(info.sectionId);
+                                break;
+                            }
                         }
-                    }
+                    }else{filteredSids.add(info.sectionId);}
                 }
-                infoList.removeIf(info -> !filteredSids.contains(info.sectionId));
             }
+            infoList.removeIf(info -> !filteredSids.contains(info.sectionId));
+//            if (searchInstructor != null && !searchInstructor.equals("")) {
+//                /*Motivation of filteredSIds:
+//                1个section有2个class, 只有一个class被筛除(如筛选instructor时),
+//                正确结果应该是该section被筛除，但是只筛选infos无法做到这一点
+//                 */
+//                HashSet<Integer> filteredSids = new HashSet<>();
+//                for (Info info : infoList) {
+//                    //偷懒筛选法
+//                    if (info.instructorFullName.replace(" ","").contains(searchInstructor)) {
+//                        filteredSids.add(info.sectionId);
+//                    }
+//                }
+//                infoList.removeIf(info -> !filteredSids.contains(info.sectionId));
+//            }
+//            if (searchDayOfWeek != null) {
+//                HashSet<Integer> filteredSids = new HashSet<>();
+//                for (Info info : infoList) {
+//                    if(info.dayOfWeek == searchDayOfWeek){
+//                        filteredSids.add(info.sectionId);
+//                    }
+//                }
+//                infoList.removeIf(info -> !filteredSids.contains(info.sectionId));
+//            }
+//            if (searchClassTime != null) {
+//                HashSet<Integer> filteredSids = new HashSet<>();
+//                for (Info info : infoList) {
+//                    if(info.classBegin <= searchClassTime &&
+//                            info.classEnd >= searchClassTime){
+//                        filteredSids.add(info.sectionId);
+//                    }
+//                }
+//                infoList.removeIf(info -> !filteredSids.contains(info.sectionId));
+//            }
+//            if (searchClassLocations != null) {
+//                HashSet<Integer> filteredSids = new HashSet<>();
+//                for (Info info : infoList) {
+//                    for (String eachLocation : searchClassLocations) {
+//                        if(info.location.contains(eachLocation)){
+//                            filteredSids.add(info.sectionId);
+//                            break;
+//                        }
+//                    }
+//                }
+//                infoList.removeIf(info -> !filteredSids.contains(info.sectionId));
+//            }
             //----------CourseType不筛选了，摆-------------
             //3.筛选ignorePassed & ignoreMissingPrerequisites
             infos=infoList.stream();//List→Stream
