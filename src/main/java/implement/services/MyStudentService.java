@@ -584,21 +584,39 @@ public class MyStudentService implements StudentService {
 
     @Override
     public CourseTable getCourseTable(int studentId, Date date) {
+        //System.out.println(studentId + " " + date);
         CourseTable ct = new CourseTable();
         ct.table=new HashMap<>();
         try(Connection con=SQLDataSource.getInstance().getSQLConnection()){
+            String psql = """
+                    select *
+                    from semester
+                    where begin_time <= ? and end_time >= ?
+                    """;
+            PreparedStatement pps = con.prepareStatement(psql);
+            pps.setDate(1,date);
+            pps.setDate(2,date);
+            ResultSet prs = pps.executeQuery();
+            int sid = 0;
+            int week = 0;
+            while(prs.next()) {
+                sid = prs.getInt(1);
+                Date ks = prs.getDate(3);
+                long days = (date.getTime() - ks.getTime())/(1000*3600*24);
+                week = (int) (days / 7 + 1);
+            }
             String sql = """
-                    select c.name, s.name, sc.instructor_id, i.full_name, sc.class_begin, sc.class_end, location, sc.day_of_week
+                    select c.name, s.name, sc.instructor_id, i.full_name, sc.class_begin, sc.class_end, location, sc.day_of_week, sc.week_list
                     from student
                              join student_section ss on student.id = ss.student_id
                              join section s on s.id = ss.section_id
                              join course c on c.id = s.course_id
                              join section_class sc on s.id = sc.section_id
                              join instructor i on i.id = sc.instructor_id
-                    where s.id = ? and enrolled_date = ?""";
+                    where student.id = ? and s.semester_id = ?""";
             PreparedStatement ps = con.prepareStatement(sql);
             ps.setInt(1,studentId);
-            ps.setDate(2, date);
+            ps.setInt(2, sid);
             ResultSet rs = ps.executeQuery();
             // 这里分开存了一周内，周一到周日的课程
             ArrayList<Set<CourseTable.CourseTableEntry>> ctSet = new ArrayList<>();
@@ -607,7 +625,10 @@ public class MyStudentService implements StudentService {
                 Set<CourseTable.CourseTableEntry> set = new HashSet<>();
                 ctSet.add(set);
             }
-            if(rs.next()) {
+            while(rs.next()) {
+                String wl = rs.getString(9);
+                String wk = String.valueOf(week);
+                if(!wl.contains(wk)) continue;
                 String courseName = rs.getString(1);
                 String sectionName = rs.getString(2);
                 int instructorId = rs.getInt(3);
