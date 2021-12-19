@@ -22,7 +22,7 @@ create table semester
 
 create table section
 (
-    id             integer default nextval('course_section_id_seq'::regclass) not null
+    id             serial
         constraint course_section_pk
             primary key,
     course_id      varchar(20)                                                not null
@@ -46,7 +46,7 @@ create table instructor
 
 create table section_class
 (
-    id            integer default nextval('course_section_class_id_seq'::regclass) not null
+    id            serial
         constraint course_section_class_pk
             primary key,
     section_id    integer                                                          not null
@@ -121,5 +121,3 @@ create table student_section
     constraint pk_student_section
         primary key (student_id, section_id)
 );
-
-
