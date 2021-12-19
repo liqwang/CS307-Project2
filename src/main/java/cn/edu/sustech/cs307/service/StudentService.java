@@ -157,9 +157,8 @@ public interface StudentService {
      * If the scoring scheme of a course is one type in pass-or-fail and hundredmark grade,
      * your system should not accept the other type of grade.
      *
-     * Course section's left capacity should remain unchanged after this method.
+     * ***Course section's left capacity should remain unchanged after this method.***
      *
-     * @param studentId
      * @param sectionId We will get the sectionId of one section first
      *                  and then invoke the method by using the sectionId.
      * @param grade     Can be null

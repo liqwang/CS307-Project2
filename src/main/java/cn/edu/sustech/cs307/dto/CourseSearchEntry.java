@@ -28,7 +28,6 @@ public class CourseSearchEntry {
      * <p>
      * Course conflict is when multiple sections belong to the same course.
      * Time conflict is when multiple sections have time-overlapping classes.
-     * Note that a section is both course and time conflicting with itself!(其实就是Course Conflict)
      */
     public List<String> conflictCourseNames;
 

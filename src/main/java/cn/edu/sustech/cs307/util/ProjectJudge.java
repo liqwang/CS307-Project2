@@ -54,27 +54,27 @@ public final class ProjectJudge {
                     .collect(Collectors.toUnmodifiableList());
             result.elapsedTimeNs.addAndGet(System.nanoTime() - beforeTime);
             //TODO: debug
-//            result.passCount.addAndGet(IntStream.range(0, searchCourseParams.size()).parallel()
-//                    .filter(it -> searchCourseExpected.get(it).equals(searchCourseResult.get(it))).count());
-            result.passCount.addAndGet(IntStream.range(0, searchCourseParams.size())
-                    .filter(it -> {
-                        if(!searchCourseExpected.get(it).equals(searchCourseResult.get(it)) &&
-                            searchCourseParams.get(it).get(8)==StudentService.CourseType.ALL){
-                            System.out.println("错误参数:");
-                            for (Object o : searchCourseParams.get(it)) {
-                                System.out.println(o==null?null:o.toString());//可能会有bug
-                            }
-                            Gson gson = new GsonBuilder().setPrettyPrinting().create();
-                            System.out.println("------------------预期查询结果-------------------");
-                            for (CourseSearchEntry entry : searchCourseExpected.get(it)) {
-                                System.out.println(gson.toJson(entry));
+            result.passCount.addAndGet(IntStream.range(0, searchCourseParams.size()).parallel()
+                    .filter(it -> searchCourseExpected.get(it).equals(searchCourseResult.get(it))).count());
+//            result.passCount.addAndGet(IntStream.range(0, searchCourseParams.size())
+//                    .filter(it -> {
+//                        if(!searchCourseExpected.get(it).equals(searchCourseResult.get(it)) &&
+//                            searchCourseParams.get(it).get(8)==StudentService.CourseType.ALL){
+//                            System.out.println("错误参数:");
+//                            for (Object o : searchCourseParams.get(it)) {
+//                                System.out.println(o==null?null:o.toString());//可能会有bug
+//                            }
+//                            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+//                            System.out.println("-------------------------------------------预期查询结果-----------------------------------------");
+//                            for (CourseSearchEntry entry : searchCourseExpected.get(it)) {
+////                                System.out.println(gson.toJson(entry));
 //                                System.out.println(entry.course.id);
 //                                System.out.println("sectionId:"+entry.section.id);
 //                                System.out.println();
-                            }
-                            System.out.println("------------------实际查询结果--------------------");
-                            for (CourseSearchEntry entry : searchCourseResult.get(it)) {
-                                System.out.println(gson.toJson(entry));
+//                            }
+//                            System.out.println("-------------------------------------------实际查询结果-----------------------------------------");
+//                            for (CourseSearchEntry entry : searchCourseResult.get(it)) {
+////                                System.out.println(gson.toJson(entry));
 //                                System.out.println(entry.course.id);
 //                                System.out.println("sectionId:"+entry.section.id);
 ////                                for (CourseSectionClass sectionClass : entry.sectionClasses) {
@@ -82,12 +82,12 @@ public final class ProjectJudge {
 ////                                    System.out.println("Begin: "+sectionClass.classBegin);
 ////                                    System.out.println("End: "+sectionClass.classEnd);
 ////                                }
-                                System.out.println();
-                            }
-                            System.exit(1);
-                            return false;
-                        }else{return true;}
-                    }).count());
+//                                System.out.println();
+//                            }
+//                            System.exit(1);
+//                            return false;
+//                        }else{return true;}
+//                    }).count());
         }
         return result;
     }
