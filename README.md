@@ -8,7 +8,7 @@
 
 #### 结构
 
-![QQ图片20211230121112](pro2报告\QQ图片20211230121112.png)
+<img src="pro2报告\QQ图片20211230121112.png">
 
 共建立了10张表，其中department,major,student,course,section,section_class,instructor,semester均为储存数据的单表，major_course，student_section是多对多的关系表。
 
@@ -20,7 +20,7 @@
 
 将prerequisite 转换为Varchar类型, 其中AndPrerequisite类型，用AND连接，OrPrerequisite类型，用OR连接，转化为如图形式，方便后续运用逆波兰算法判断是否满足先修课，若无则为null。
 
-![QQ图片20211230135239](pro2报告\QQ图片20211230135239.png)
+<img src="pro2报告\QQ图片20211230135239.png">
 
 student_section表中，为方便储存判断，将分数course grading转化为了int类型。转化遵循逻辑如下：如果该同学本门课还没有成绩，存mark=-1，若已经登过分，百分制对应0—100；二进制分数，PASS对应-2，FAILE对应-3。
 
@@ -239,7 +239,7 @@ public int addCourseSection(String courseId, int semesterId, String sectionName,
   select pg_size_pretty(pg_tablespace_size('pg_default'));
   ```
 
-  ![QQ图片20211229230904](pro2报告\QQ图片20211229230904.png)
+<img src="pro2报告\QQ图片20211229230904.png">
 
 - Disk Consumption
 
@@ -249,7 +249,7 @@ public int addCourseSection(String courseId, int semesterId, String sectionName,
   select pg_size_pretty(pg_database_size('project_class2'));
   ```
 
-  ![QQ图片20211229231953](pro2报告\QQ图片20211229231953.png)
+<img src="pro2报告\QQ图片20211229231953.png">
 
 
 
@@ -259,7 +259,7 @@ public int addCourseSection(String courseId, int semesterId, String sectionName,
 select indexrelname, pg_size_pretty(pg_relation_size(relid)) from pg_stat_user_indexes where schemaname='public' order by pg_relation_size(relid) desc;
 ```
 
-![QQ图片20211229232103](pro2报告\QQ图片20211229232103.png)
+<img src="pro2报告\QQ图片20211229232103.png">
 
 ​	表本身（不含索引）
 
@@ -268,7 +268,7 @@ select relname, pg_size_pretty(pg_relation_size(relid)) from pg_stat_user_tables
 
 ```
 
-![QQ图片20211229232305](pro2报告\QQ图片20211229232305.png)
+<img src="pro2报告\QQ图片20211229232305.png">
 
 ​	表包括索引所占内存：
 
@@ -281,13 +281,13 @@ ORDER BY
 pg_total_relation_size('"' || table_schema || '"."' || table_name || '"') DESC
 ```
 
-![QQ图片20211229232711](pro2报告\QQ图片20211229232711.png)
+<img src="pro2报告\QQ图片20211229232711.png">
 
 上述搜索结果可得，索引和数据占据内存相近，他们构成了整个数据库的大部分内存，还有一些内存用于储存pg_和information_表格，占一小部分。其中，占内存最大的是student_section表格（57/67)，它的数据接近五十万条。
 
 #### Speed and Correctness
 
-![QQ图片20211230142548](pro2报告\QQ图片20211230142548.jpg)
+<img src="pro2报告\QQ图片20211230142548.jpg">
 
 优化：用流进行searchcourse筛选，但要注意的是一些情况不适用，只能进行for循环筛选。
 
@@ -342,7 +342,7 @@ revoke update on student_section from students;
 
 所以，如果是以普通的student的身份是无法修改表中信息的。
 
-![image-20211230000106540-16407936701961](pro2报告\image-20211230000106540-16407936701961.png)
+<img src="pro2报告\image-20211230000106540-16407936701961.png">
 
 ### 特点
 
@@ -498,7 +498,7 @@ revoke update on student_section from students;
 
 本次项目中，我们小组为了方便合作及代码分工，每个组员都学习了git的有关知识，并且在GitHub上创建了仓库存储整个project过程中用到的所有文件。GitHub地址为：[QuanQuan-CHO/CS307_2021Fall_Project2: CS307数据库原理Project2：教务系统 (github.com)](https://github.com/QuanQuan-CHO/CS307_2021Fall_Project2)。在project过程中，我们通过将IDEA连入GitHub的仓库里，可以很方便的使用其他成员修改过的代码。
 
-![image-20211230185526812-16408617305821](pro2报告\image-20211230185526812-16408617305821.png)
+<img src="pro2报告\image-20211230185526812-16408617305821.png">
 
 - #### JDBC的进一步理解和应用
 
