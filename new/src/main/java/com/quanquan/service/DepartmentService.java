@@ -1,0 +1,24 @@
+package com.quanquan.service;
+
+import com.quanquan.dto.Department;
+
+import javax.annotation.ParametersAreNonnullByDefault;
+import java.util.List;
+
+@ParametersAreNonnullByDefault
+public interface DepartmentService {
+    /**
+     *  if adding a new department which has the same name with an existing department,
+     *  it should throw an {@code IntegrityViolationException}
+     */
+    int addDepartment(String name);
+
+    void removeDepartment(int departmentId);
+
+    List<Department> getAllDepartments();
+
+    /**
+     * If there is no Department about specific id, throw EntityNotFoundException.
+     */
+    Department getDepartment(int departmentId);
+}
