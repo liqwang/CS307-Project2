@@ -1,0 +1,1 @@
+section_class表中，week_list采用mediumint(-2^23~2^23-1)存储，遍历所有可能性
