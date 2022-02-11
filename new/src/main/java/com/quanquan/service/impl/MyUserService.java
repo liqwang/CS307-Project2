@@ -1,25 +1,32 @@
 package com.quanquan.service.impl;
 
-import com.quanquan.database.SQLDataSource;
 import com.quanquan.dto.Instructor;
 import com.quanquan.dto.Student;
 import com.quanquan.dto.User;
 import com.quanquan.exception.EntityNotFoundException;
 import com.quanquan.service.UserService;
-import util.Util;
+import com.quanquan.util.Util;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+@Service
 public class MyUserService implements UserService {
+
+    @Autowired
+    DataSource dataSource;
+
     //✔
     @Override
     public void removeUser(int userId) {
-        try(Connection con= SQLDataSource.getInstance().getSQLConnection()){
-            String sql1 = "delete from student where id = ?";
-            String sql2 = "delete from instructor where id = ?";
+        try(Connection con=dataSource.getConnection()){
+            String sql1 = "delete from mybatis.student where id = ?";
+            String sql2 = "delete from mybatis.instructor where id = ?";
             if(Util.update(con, sql1, userId)+
                Util.update(con, sql2, userId)==0){
                 throw new EntityNotFoundException();
@@ -32,20 +39,20 @@ public class MyUserService implements UserService {
 
     @Override
     public List<User> getAllUsers() {
-        try (Connection con=SQLDataSource.getInstance().getSQLConnection()){
+        try (Connection con=dataSource.getConnection()){
             ArrayList<User> users = new ArrayList<>();
             String sql1 = """
                     select enrolled_date "enrolledDate",
                            major_id "major",
                            id,
                            full_name "fullName"
-                    from student;""";
+                    from mybatis.student;""";
             ArrayList<Student> stu = Util.query(Student.class, con, sql1);
 
             String sql2 = """
                     select id,
                            full_name "fullName"
-                    from instructor;""";
+                    from mybatis.instructor;""";
             ArrayList<Instructor> ins = Util.query(Instructor.class, con, sql2);
             users.addAll(stu);
             users.addAll(ins);
@@ -59,8 +66,8 @@ public class MyUserService implements UserService {
 
     @Override
     public User getUser(int userId) {
-        try (Connection con=SQLDataSource.getInstance().getSQLConnection()){
-            String sql1 = "select * from student where id = ?";
+        try (Connection con=dataSource.getConnection()){
+            String sql1 = "select * from mybatis.student where id = ?";
             ArrayList<Student> stu = Util.query(Student.class, con ,sql1, userId);
             ArrayList<Instructor> ins = Util.query(Instructor.class, con ,sql1, userId);
             if(!stu.isEmpty()) return stu.get(0);

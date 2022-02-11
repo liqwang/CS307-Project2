@@ -1,9 +1,15 @@
 package com.quanquan.dto;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class CourseSearchEntry {
     /**
      * The course of the searched section
@@ -30,23 +36,4 @@ public class CourseSearchEntry {
      * Time conflict is when multiple sections have time-overlapping classes.
      */
     public List<String> conflictCourseNames;
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        CourseSearchEntry entry = (CourseSearchEntry) o;
-        return course.equals(entry.course) && section.equals(entry.section)
-                && sectionClasses.equals(entry.sectionClasses)
-                && conflictCourseNames.equals(entry.conflictCourseNames);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(course, section, sectionClasses, conflictCourseNames);
-    }
 }

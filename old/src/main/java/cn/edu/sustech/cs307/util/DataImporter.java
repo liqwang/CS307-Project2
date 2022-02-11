@@ -13,7 +13,6 @@ import cn.edu.sustech.cs307.dto.User;
 import cn.edu.sustech.cs307.dto.grade.Grade;
 import cn.edu.sustech.cs307.dto.prerequisite.Prerequisite;
 import cn.edu.sustech.cs307.factory.ServiceFactory;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import cn.edu.sustech.cs307.service.CourseService;
 import cn.edu.sustech.cs307.service.DepartmentService;
 import cn.edu.sustech.cs307.service.InstructorService;
@@ -21,8 +20,6 @@ import cn.edu.sustech.cs307.service.MajorService;
 import cn.edu.sustech.cs307.service.SemesterService;
 import cn.edu.sustech.cs307.service.StudentService;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -137,15 +134,5 @@ public final class DataImporter {
                 studentService.addEnrolledCourseWithGrade(studentId, sectionId, it.getValue());
             });
         });
-    }
-
-    private static <T> T readValueFromFile(String fileName, Class<T> tClass) {
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.enableDefaultTypingAsProperty(ObjectMapper.DefaultTyping.JAVA_LANG_OBJECT, "@type");
-        try {
-            return objectMapper.readValue(new File("./data/" + fileName), tClass);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 }

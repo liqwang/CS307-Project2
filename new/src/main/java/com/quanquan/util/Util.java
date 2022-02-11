@@ -1,4 +1,4 @@
-package util;
+package com.quanquan.util;
 
 import com.quanquan.dto.*;
 import com.quanquan.exception.IntegrityViolationException;
@@ -81,7 +81,7 @@ public class Util {
                             sql = """
                                     select id,
                                            full_name "fullName"
-                                    from instructor
+                                    from mybatis.instructor
                                     where id=?""";
                             val = query(Instructor.class, con, sql, rs.getInt(i + 1)).get(0);
                         }
@@ -91,7 +91,7 @@ public class Util {
                                            full_name "fullName",
                                            enrolled_date "enrolledDate",
                                            major_id "majorId"
-                                    from student
+                                    from mybatis.student
                                     where id=?;""";
                             val = query(Student.class, con, sql, rs.getInt(i + 1)).get(0);
                         }
@@ -100,16 +100,35 @@ public class Util {
                                     select id,
                                            name,
                                            department_id "departmentId"
-                                    from major
+                                    from mybatis.major
                                     where id=?;""";
                             val = query(Major.class, con, sql, rs.getInt(i + 1)).get(0);
                         }
                         case "department" -> {
                             sql = """
                                     select *
-                                    from department
+                                    from mybatis.department
                                     where id=?;""";
                             val = query(Department.class, con, sql, rs.getInt(i + 1)).get(0);
+                        }
+                        case "course" -> {
+                            sql="select id," +
+                                    "name," +
+                                    "credit," +
+                                    "class_hour classHour," +
+                                    "prerequisite" +
+                                    " from mybatis.course" +
+                                    " where id=?";
+                            val=query(Course.class,con,sql,rs.getString(i+1)).get(0);
+                        }
+                        case "semester" -> {
+                            sql="select id," +
+                                    "name," +
+                                    "begin_time begin," +
+                                    "end_time end " +
+                                    "from mybatis.semester" +
+                                    " where id=?";
+                            val=query(Semester.class,con,sql,rs.getInt(i+1)).get(0);
                         }
                         default -> val = rs.getObject(i + 1);
                     }

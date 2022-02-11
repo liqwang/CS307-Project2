@@ -1,14 +1,16 @@
 package com.quanquan.service.impl;
 
-import com.quanquan.database.SQLDataSource;
 import com.quanquan.dto.Department;
 import com.quanquan.dto.Major;
 import com.quanquan.exception.EntityNotFoundException;
 import com.quanquan.exception.IntegrityViolationException;
 import com.quanquan.service.MajorService;
-import util.Util;
+import com.quanquan.util.Util;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -17,12 +19,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 @ParametersAreNonnullByDefault
+@Service
 public class MyMajorService implements MajorService {
 
+    @Autowired
+    DataSource dataSource;
     @Override
     public int addMajor(String name, int departmentId) {
-        try(Connection con= SQLDataSource.getInstance().getSQLConnection()){
-            String sql="insert into major(name, department_id) values (?,?)";
+        try(Connection con=dataSource.getConnection()){
+            String sql="insert into mybatis.major(name, department_id) values (?,?)";
             PreparedStatement ps = con.prepareStatement(sql,PreparedStatement.RETURN_GENERATED_KEYS);
             ps.setString(1,name);
             ps.setInt(2,departmentId);
@@ -38,16 +43,16 @@ public class MyMajorService implements MajorService {
 
     @Override //删三个 student? student_section, major_courses
     public void removeMajor(int majorId) {
-        try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
-            String sql1="delete from major where id=?";
+        try(Connection con=dataSource.getConnection()) {
+            String sql1="delete from mybatis.major where id=?";
             PreparedStatement ps1 = con.prepareStatement(sql1);
             ps1.setInt(1,majorId);
             ps1.executeUpdate();
-            String sql2="delete from major_course where major_id=?";
+            String sql2="delete from mybatis.major_course where major_id=?";
             PreparedStatement ps2 = con.prepareStatement(sql2);
             ps2.setInt(1,majorId);
             ps2.executeUpdate();
-            String sql3="delete from student where major_id=?";
+            String sql3="delete from mybatis.student where major_id=?";
             PreparedStatement ps3 = con.prepareStatement(sql3);
             ps3.setInt(1,majorId);
             ps3.executeUpdate();
@@ -60,9 +65,9 @@ public class MyMajorService implements MajorService {
     @Override
     public List<Major> getAllMajors() {
         ArrayList<Major> majors = new ArrayList<>();
-        try (Connection con=SQLDataSource.getInstance().getSQLConnection()){
+        try (Connection con=dataSource.getConnection()){
             String sql="select *\n" +
-                    "from major left join department d on d.id = major.department_id;";
+                    "from mybatis.major left join mybatis.department d on d.id = major.department_id;";
             PreparedStatement ps = con.prepareStatement(sql);
             ResultSet rs = ps.executeQuery();
             while (rs.next()){
@@ -84,9 +89,9 @@ public class MyMajorService implements MajorService {
 
     @Override
     public Major getMajor(int majorId) {
-        try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
+        try(Connection con=dataSource.getConnection()) {
             String sql="select *\n" +
-                    "from major left join department d on d.id = major.department_id where major.id=?;";
+                    "from mybatis.major left join mybatis.department d on d.id = major.department_id where major.id=?;";
             PreparedStatement ps3 = con.prepareStatement(sql);
             ps3.setInt(1,majorId);
             ResultSet rs=ps3.executeQuery();
@@ -106,8 +111,8 @@ public class MyMajorService implements MajorService {
 
     @Override
     public void addMajorCompulsoryCourse(int majorId, String courseId) {
-        String sql = "insert into major_course values (?, ?, true)";
-        try (Connection con=SQLDataSource.getInstance().getSQLConnection()){
+        String sql = "insert into mybatis.major_course values (?, ?, true)";
+        try (Connection con=dataSource.getConnection()){
             Util.update(con, sql, majorId, courseId);
         } catch (SQLException e) {
             e.printStackTrace();
@@ -117,8 +122,8 @@ public class MyMajorService implements MajorService {
 
     @Override
     public void addMajorElectiveCourse(int majorId, String courseId) {
-        String sql = "insert into major_course values (?, ?, false)";
-        try (Connection con=SQLDataSource.getInstance().getSQLConnection()){
+        String sql = "insert into mybatis.major_course values (?, ?, false)";
+        try (Connection con=dataSource.getConnection()){
             Util.update(con, sql, majorId, courseId);
         } catch (SQLException e) {
             e.printStackTrace();

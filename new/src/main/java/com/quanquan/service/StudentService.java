@@ -84,10 +84,15 @@ public interface StudentService {
     }
 
     /**
+     * 用于登陆验证
+     */
+    String getPasswordById(int id);
+
+    /**
      * Add one student according to following parameters.
      * If some parameters are invalid, throw {@link IntegrityViolationException}
      */
-    void addStudent(int userId, int majorId, String firstName, String lastName, Date enrolledDate);
+    void addStudent(int userId, int majorId, String firstName, String lastName, Date enrolledDate,String password);
 
     /**
      * Search available courses (' sections) for the specified student in the semester with extra conditions.

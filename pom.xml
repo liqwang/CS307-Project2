@@ -68,7 +68,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>cn.edu.sustech.cs307.util.ProjectJudge</mainClass>
+                            <mainClass>cn.edu.sustech.cs307.com.quanquan.util.ProjectJudge</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

@@ -2,9 +2,11 @@ package com.quanquan.dto.grade;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
 
+@Data
 public final class HundredMarkGrade implements Grade {
-    public final short mark;
+    private final Short mark;
 
     @JsonCreator
     public HundredMarkGrade(@JsonProperty("mark") short mark) {
@@ -14,20 +16,5 @@ public final class HundredMarkGrade implements Grade {
     @Override
     public <R> R when(Cases<R> cases) {
         return cases.match(this);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        HundredMarkGrade that = (HundredMarkGrade) o;
-
-        return mark == that.mark;
-    }
-
-    @Override
-    public int hashCode() {
-        return mark;
     }
 }

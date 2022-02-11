@@ -1,34 +1,20 @@
 package com.quanquan.dto;
 
-import java.util.Objects;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class CourseSection {
-    /**
-     *For example, it can represent the id of section "No.1 Chinese class of database principle"
-     */
-    public int id;
-    /**
-     * if the course name is "database principle", the name here could be "No.1 Chinese class", "No.1 English class" ...
-     */
+    public Integer id;
+
+    public Course course;
+
+    public Semester semester;
+
     public String name;
 
-    public int totalCapacity, leftCapacity;
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        CourseSection section = (CourseSection) o;
-        return id == section.id && totalCapacity == section.totalCapacity && leftCapacity == section.leftCapacity
-                && name.equals(section.name);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id, name, totalCapacity, leftCapacity);
-    }
+    public Integer totalCapacity, leftCapacity;
 }

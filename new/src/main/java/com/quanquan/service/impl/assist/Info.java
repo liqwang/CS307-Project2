@@ -1,7 +1,6 @@
 package com.quanquan.service.impl.assist;
 
-import cn.edu.sustech.cs307.dto.Course;
-
+import com.quanquan.dto.Course;
 import java.time.DayOfWeek;
 import java.util.HashSet;
 

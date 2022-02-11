@@ -1,5 +1,9 @@
 package com.quanquan.dto;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.time.DayOfWeek;
 import java.util.Objects;
 import java.util.Set;
@@ -9,8 +13,11 @@ import java.util.Set;
  * One CourseSection usually has two CourseSectionClass
  * the one is theory class, the other is lab class
  */
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class CourseSectionClass {
-    public int id;
+    public Integer id;
     public Instructor instructor;
     public DayOfWeek dayOfWeek; // We ensure the test semesters begin with Monday.
     // The given elements in weekList are sorted.
@@ -18,25 +25,6 @@ public class CourseSectionClass {
     public Set<Short> weekList;
     // The time quantum of start and end (closed interval).
     // For example: classStart is 3 while classEnd is 4
-    public short classBegin, classEnd;
+    public Short classBegin, classEnd;
     public String location;
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        CourseSectionClass that = (CourseSectionClass) o;
-        return id == that.id && classBegin == that.classBegin && classEnd == that.classEnd &&
-                instructor.equals(that.instructor) && dayOfWeek == that.dayOfWeek && weekList.equals(that.weekList) &&
-                location.equals(that.location);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id, instructor, dayOfWeek, weekList, classBegin, classEnd, location);
-    }
 }

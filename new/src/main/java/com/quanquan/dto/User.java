@@ -1,10 +1,8 @@
 package com.quanquan.dto;
 
-import java.util.Objects;
-
 public abstract class User {
 
-    public int id;
+    public Integer id;
     /**
      * A user's full name is: first_name || ' ' || last_name, if both first name and last name are alphabetical (English alphabets) or space (' '), otherwise first_name || last_name.
      *
@@ -12,21 +10,4 @@ public abstract class User {
      * if first name 'David Lee' and last name 'Roth' then full name is 'David Lee Roth'.
      */
     public String fullName;
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        User user = (User) o;
-        return id == user.id && fullName.equals(user.fullName);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id, fullName);
-    }
 }

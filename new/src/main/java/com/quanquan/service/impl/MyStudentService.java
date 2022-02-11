@@ -1,6 +1,5 @@
 package com.quanquan.service.impl;
 
-import com.quanquan.database.SQLDataSource;
 import com.quanquan.dto.*;
 import com.quanquan.dto.grade.Grade;
 import com.quanquan.dto.grade.HundredMarkGrade;
@@ -11,10 +10,13 @@ import com.quanquan.service.StudentService;
 import com.quanquan.service.impl.assist.ClassInfo;
 import com.quanquan.service.impl.assist.Info;
 import com.quanquan.service.impl.assist.SelectedInfo;
-import util.Util;
+import com.quanquan.util.Util;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
+import javax.sql.DataSource;
 import java.sql.Date;
 import java.sql.*;
 import java.time.DayOfWeek;
@@ -23,16 +25,32 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @ParametersAreNonnullByDefault
+@Service
 public class MyStudentService implements StudentService {
 
+    @Autowired
+    DataSource dataSource;
+
     @Override
-    public void addStudent(int userId, int majorId, String firstName, String lastName, Date enrolledDate) {
-        try(Connection con= SQLDataSource.getInstance().getSQLConnection()) {
+    public String getPasswordById(int id) {
+        try(Connection con=dataSource.getConnection()){
+            String sql="select password from mybatis.student where id=?";
+            ArrayList<String> res = Util.querySingle(con, sql, id);
+            return res.isEmpty()?"":res.get(0);
+        }catch (SQLException e){
+            e.printStackTrace();
+            return "";
+        }
+    }
+
+    @Override
+    public void addStudent(int userId, int majorId, String firstName, String lastName, Date enrolledDate,String password) {
+        try(Connection con=dataSource.getConnection()) {
             String fullName;
             if(firstName.charAt(0) >= 'A' && firstName.charAt(0) <= 'Z') fullName = firstName + " " + lastName;
             else fullName = firstName + lastName;
-            String sql="insert into student (id,major_id,full_name,enrolled_date) values (?,?,?,?)";
-            Util.update(con, sql, userId, majorId, fullName, enrolledDate);
+            String sql="insert into mybatis.student (id,major_id,full_name,enrolled_date,password) values (?,?,?,?,?)";
+            Util.update(con, sql, userId, majorId, fullName, enrolledDate, password);
         }catch (SQLException e) {
             e.printStackTrace();
             throw new IntegrityViolationException();
@@ -44,27 +62,26 @@ public class MyStudentService implements StudentService {
      */
     @Override
     public List<CourseSearchEntry> searchCourse(int studentId, int semesterId, @Nullable String searchCid, @Nullable String searchName, @Nullable String searchInstructor, @Nullable DayOfWeek searchDayOfWeek, @Nullable Short searchClassTime, @Nullable List<String> searchClassLocations, CourseType searchCourseType, boolean ignoreFull, boolean ignoreConflict, boolean ignorePassed, boolean ignoreMissingPrerequisites, int pageSize, int pageIndex) {
-        try (Connection con=SQLDataSource.getInstance().getSQLConnection()){
+        try (Connection con=dataSource.getConnection()){
             //0.准备所有信息: infos
             String sql= """
                     select left_capacity "leftCapacity",
                            course_id "courseId",
-                           c.name||'['||sec.name||']' "courseFullName",
+                           c.name||'['||sec.name||']' courseFullName,
                            full_name "instructorFullName",
                            day_of_week "dayOfWeek",
                            class_begin "classBegin",class_end "classEnd",
                            location,
-                           is_pf grading,
                            sec.id "sectionId",
                            instructor_id "instructorId",
                            sc.id "classId",
                            week_list "weekList"
-                    from section sec
-                            join semester sem on sec.semester_id=sem.id
+                    from mybatis.section sec
+                            join mybatis.semester sem on sec.semester_id=sem.id
                                            and sem.id=?
-                            join section_class sc on sec.id = sc.section_id
-                            join instructor i on sc.instructor_id = i.id
-                            join course c on sec.course_id = c.id
+                            join mybatis.section_class sc on sec.id = sc.section_id
+                            join mybatis.instructor i on sc.instructor_id = i.id
+                            join mybatis.course c on sec.course_id = c.id
                     order by "courseId","courseFullName";""";
             Stream<Info> infos = Util.query(Info.class, con, sql,semesterId).stream().parallel();
             //1.筛选searchCid & searchName & ignoreFull(只和section有关)
@@ -105,8 +122,8 @@ public class MyStudentService implements StudentService {
                 //3.1.0获取该学生所有pass的课的courseId: passedCids
                 sql= """
                         select distinct course_id
-                        from student_section
-                             join section on section_id = id
+                        from mybatis.student_section
+                             join mybatis.section on section_id = id
                                          and student_id=?
                                          and (mark>=60 or mark=-2)""";
                 ArrayList<String> passedCids= Util.querySingle(con,sql,studentId);
@@ -144,11 +161,11 @@ public class MyStudentService implements StudentService {
             sql= """
                     select course_id "courseId",
                            c.name||'['||s.name||']' "fullName"
-                    from student_section
-                         join section s on s.id=section_id
+                    from mybatis.student_section
+                         join mybatis.section s on s.id=section_id
                                        and semester_id=?
                                        and student_id=?
-                         join course c on c.id=course_id""";
+                         join mybatis.course c on c.id=course_id""";
             ArrayList<SelectedInfo> selectedInfos = Util.query(SelectedInfo.class,con,sql,semesterId,studentId);
             //4.3.0.2获取该学生本学期已选的所有classes: enrolledClasses(被4.3.3.2使用)
             String sql6= """
@@ -156,12 +173,12 @@ public class MyStudentService implements StudentService {
                            class_begin "classBegin",class_end "classEnd",
                            week_list "weekList",
                            c.name||'['||s.name||']' "sectionFullName"
-                    from student_section
-                         join section s on section_id=s.id
+                    from mybatis.student_section
+                         join mybatis.section s on section_id=s.id
                                       and student_id=?
                                       and semester_id=?
-                         join section_class on section_class.section_id=s.id
-                         join course c on c.id=s.course_id""";
+                         join mybatis.section_class on section_class.section_id=s.id
+                         join mybatis.course c on c.id=s.course_id""";
             ArrayList<ClassInfo> enrolledClasses = Util.query(ClassInfo.class,con,sql6,studentId,semesterId);
             for (Integer sectionId : sectionIds) {
                 CourseSearchEntry entry = new CourseSearchEntry();
@@ -173,14 +190,14 @@ public class MyStudentService implements StudentService {
                         if(!hasGenerate) {
                             //4.3.1准备course
                             sql = """
-                                select id,name,credit,class_hour "classHour",is_pf grading
-                                from course
+                                select id,name,credit,class_hour "classHour"
+                                from mybatis.course
                                 where id=?""";
                             entry.course=Util.query(Course.class,con,sql,info.courseId).get(0);
                             //4.3.2准备section
                             sql="""
                                 select id,name,total_capacity "totalCapacity",left_capacity "leftCapacity"
-                                from section
+                                from mybatis.section
                                 where id=?""";
                             entry.section=Util.query(CourseSection.class,con,sql,sectionId).get(0);
                             //4.3.3准备conflictCourseNames
@@ -197,7 +214,7 @@ public class MyStudentService implements StudentService {
                                     select day_of_week "dayOfWeek",
                                            class_begin "classBegin",class_end "classEnd",
                                            week_list "weekList"
-                                    from section_class
+                                    from mybatis.section_class
                                     where section_id=?;""";
                             ArrayList<CourseSectionClass> sectionClasses =
                                     Util.query(CourseSectionClass.class,con,sql,sectionId);
@@ -277,35 +294,35 @@ public class MyStudentService implements StudentService {
     @Override
     public EnrollResult enrollCourse(int studentId, int sectionId) {
         //2&3&5.1这三种情况要区分开
-        try(Connection con=SQLDataSource.getInstance().getSQLConnection()){
+        try(Connection con=dataSource.getConnection()){
             //1.班级不存在
-            String sql1 = "select left_capacity from section where id=?";
+            String sql1 = "select left_capacity from mybatis.section where id=?";
             ArrayList<Integer> capacity = Util.querySingle(con, sql1, sectionId);
             if(capacity.isEmpty()){
                 return EnrollResult.COURSE_NOT_FOUND;
             }
             //2.已经选了这个班级
-            String sql2="select mark from student_section where section_id=? and student_id=?";
+            String sql2="select mark from mybatis.student_section where section_id=? and student_id=?";
             if(!Util.querySingle(con, sql2, sectionId, studentId).isEmpty()){
                 return EnrollResult.ALREADY_ENROLLED;
             }
             //3.已经通过了这门课
             String sql3= """
                     select course_id
-                    from section join student_section
+                    from mybatis.section join mybatis.student_section
                          on id=section_id
                          and student_id=?
                          and mark>=60
                          and course_id = (
                              select course_id
-                             from section
+                             from mybatis.section
                              where id=?
                          )""";//找出之前通过的这门课的courseId，如果不为空，则已通过
             if(!Util.querySingle(con, sql3, studentId, sectionId).isEmpty()){
                 return EnrollResult.ALREADY_PASSED;
             }
             //4.先修课不满足
-            String sql4="select course_id from section where id=?";
+            String sql4="select course_id from mybatis.section where id=?";
             String courseId=(String)Util.querySingle(con,sql4,sectionId).get(0);
             if(!passedPrerequisitesForCourse(studentId,courseId)){
                 return EnrollResult.PREREQUISITES_NOT_FULFILLED;
@@ -314,13 +331,13 @@ public class MyStudentService implements StudentService {
             //5.1课程冲突(已经选了这门课)
             String sql5= """
                     select course_id
-                    from section join student_section
+                    from mybatis.section join mybatis.student_section
                          on id=section_id
                          and student_id=?
                          and mark=-1
                          and course_id= (
                              select course_id
-                             from section
+                             from mybatis.section
                              where id=?
                          )""";//本学期所选的这门课的courseId，如果不为空，则已选过这门课
             if(!Util.querySingle(con,sql5,studentId,sectionId).isEmpty()){
@@ -332,15 +349,15 @@ public class MyStudentService implements StudentService {
                     select day_of_week "dayOfWeek",
                            class_begin "classBegin",class_end "classEnd",
                            week_list "weekList"
-                    from student_section
-                         join section on section_id=section.id
+                    from mybatis.student_section
+                         join mybatis.section on section_id=mybatis.section.id
                                       and student_id=?
                                       and semester_id=(
                                               select semester_id
-                                              from section
+                                              from mybatis.section
                                               where id=?
                                           )
-                         join section_class on section_class.section_id=section.id""";
+                         join mybatis.section_class on mybatis.section_class.section_id=section.id""";
             ArrayList<CourseSectionClass> enrolledClasses =
                     Util.query(CourseSectionClass.class,con,sql6,studentId,sectionId);
             //5.2.2判断是否时间冲突
@@ -351,7 +368,7 @@ public class MyStudentService implements StudentService {
             }
             //7.选课成功
             //7.1添加一条student_section关系
-            String sql8="insert into student_section values (?,?,-1)";//本学期新选的课，mark为-1
+            String sql8="insert into mybatis.student_section values (?,?,-1)";//本学期新选的课，mark为-1
             Util.update(con,sql8,studentId,sectionId);
             //7.2表section中的left_capacity--
             updateLeftCapacity(con,sectionId,true);
@@ -373,7 +390,7 @@ public class MyStudentService implements StudentService {
                     select day_of_week "dayOfWeek",
                            class_begin "classBegin",class_end "classEnd",
                            week_list "weekList"
-                    from section_class
+                    from mybatis.section_class
                     where section_id=?;""";
         ArrayList<CourseSectionClass> sectionClasses =
                 Util.query(CourseSectionClass.class,con,sql,sectionId);
@@ -398,8 +415,8 @@ public class MyStudentService implements StudentService {
 
     @Override
     public void dropCourse(int studentId, int sectionId) throws IllegalStateException {
-        String sql="select mark from student_section where student_id=? and section_id=?";
-        try (Connection con=SQLDataSource.getInstance().getSQLConnection()){
+        String sql="select mark from mybatis.student_section where student_id=? and section_id=?";
+        try (Connection con=dataSource.getConnection()){
             ArrayList<Integer> res=Util.querySingle(con,sql,studentId,sectionId);
             if(res.isEmpty()){
                 throw new EntityNotFoundException();
@@ -407,7 +424,7 @@ public class MyStudentService implements StudentService {
             if(res.get(0)!=-1){
                 throw new IllegalStateException();
             }
-            sql="delete from student_section where student_id=? and section_id=?";
+            sql="delete from mybatis.student_section where student_id=? and section_id=?";
             Util.update(con,sql,studentId,sectionId);
             updateLeftCapacity(con,sectionId,false);
         } catch (SQLException e) {
@@ -419,12 +436,11 @@ public class MyStudentService implements StudentService {
     @Override
     public void addEnrolledCourseWithGrade(int studentId, int sectionId, @Nullable Grade grade) {
         //不要修改left_capacity
-        try(Connection con=SQLDataSource.getInstance().getSQLConnection()){
+        try(Connection con=dataSource.getConnection()){
             int mark;
             String sql1= """
-                    select distinct s.id,
-                                    c.is_pf grading
-                    from section s join public.course c on c.id = s.course_id
+                    select distinct s.id
+                    from mybatis.section s join mybatis.course c on c.id = s.course_id
                     where s.id=?""";
             PreparedStatement ps1=con.prepareStatement(sql1);
             ps1.setInt(1,sectionId);
@@ -451,24 +467,24 @@ public class MyStudentService implements StudentService {
 
                        @Override
                        public Integer match(HundredMarkGrade self) {
-                           return (int) (self.mark);
+                           return (int) (self.getMark());
                        }
                    });
                 }
             }
             String sql2= """
-                    select * from student_section
+                    select * from mybatis.student_section
                     where section_id=? and student_id=?;""";
             PreparedStatement ps2=con.prepareStatement(sql2);
             ps2.setInt(1,sectionId);
             ps2.setInt(2,studentId);
 //            ResultSet rs=ps2.executeQuery();
 //            if(rs.wasNull()){
-                String sql="insert into student_section(student_id, section_id, mark) values (?,?,?);";
+                String sql="insert into mybatis.student_section(student_id, section_id, mark) values (?,?,?);";
                 try{
                     Util.update(con,sql,studentId,sectionId,mark);
                 }catch (SQLException e){
-                    String sql3="update student_section set mark=?\n" +
+                    String sql3="update mybatis.student_section set mark=?\n" +
                         "where student_section.student_id=? and student_section.section_id=?;";
                     Util.update(con,sql3,mark,studentId,sectionId);
                 }
@@ -487,18 +503,18 @@ public class MyStudentService implements StudentService {
         //isAdd为true: left_capacity--
         //isAdd为false: left_capacity++
         String addSql= """
-                update section
+                update mybatis.section
                 set left_capacity=(
                         select left_capacity
-                        from section
+                        from mybatis.section
                         where id=?
                     )-1
                 where id=?""";
         String dropSql= """
-                update section
+                update mybatis.section
                 set left_capacity=(
                         select left_capacity
-                        from section
+                        from mybatis.section
                         where id=?
                     )+1
                 where id=?""";
@@ -513,11 +529,11 @@ public class MyStudentService implements StudentService {
 
     @Override
     public void setEnrolledCourseGrade(int studentId, int sectionId, Grade grade) {
-        try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
+        try(Connection con=dataSource.getConnection()) {
             int mark;
             String sql1= """
-                    select distinct s.id,c.is_pf
-                     from section s join public.course c on c.id = s.course_id
+                    select distinct s.id
+                     from mybatis.section s join mybatis.course c on c.id = s.course_id
                      where s.id=?;""";
             PreparedStatement ps1=con.prepareStatement(sql1);
             ps1.setInt(1,sectionId);
@@ -540,11 +556,11 @@ public class MyStudentService implements StudentService {
 
                     @Override
                     public Integer match(HundredMarkGrade self) {
-                        return (int) (self.mark);
+                        return (int) (self.getMark());
                     }
                 });
             }
-            String sql="update student_section set mark=? where section_id=? and student_id=?;";
+            String sql="update mybatis.student_section set mark=? where section_id=? and student_id=?;";
             PreparedStatement ps=con.prepareStatement(sql);
             ps.setInt(1,mark);
             ps.setInt(2,sectionId);
@@ -558,16 +574,16 @@ public class MyStudentService implements StudentService {
     @Override
     public Map<Course, Grade> getEnrolledCoursesAndGrades(int studentId, @Nullable Integer semesterId) {
         Map<Course,Grade> courseGradeMap=new HashMap<>();
-        try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
+        try(Connection con=dataSource.getConnection()) {
             String sql= """
-                    select student_section.section_id,student_section.mark,course.id,course.name,course.credit,course.class_hour,course.is_pf from(
+                    select student_section.section_id,student_section.mark,course.id,course.name,course.credit,course.class_hour from(
                            select section_id,student_id,course_id from
-                           ((select section_id,mark,student_id from student_section where student_id=?) a
-                           join section s on s.id=a.section_id) b
+                           ((select section_id,mark,student_id from mybatis.student_section where student_id=?) a
+                           join mybatis.section s on s.id=a.section_id) b
                            where b.semester_id=?) c
-                           join student_section on c.student_id=student_section.student_id and c.section_id=student_section.student_id
-                           join section s2 on s2.id = student_section.section_id
-                           join course on course.id=s2.course_id
+                           join mybatis.student_section on c.student_id=student_section.student_id and c.section_id=student_section.student_id
+                           join mybatis.section s2 on s2.id = student_section.section_id
+                           join mybatis.course on course.id=s2.course_id
                            order by s2.semester_id;""";
             /* c选出了这个学期学过的课，all_section是筛选这个学期学过的课有没有重修过，order by semester_id 为了取最新成绩
                 联立course 为了新建course对象
@@ -612,10 +628,10 @@ public class MyStudentService implements StudentService {
         //System.out.println(studentId + " " + date);
         CourseTable ct = new CourseTable();
         ct.table=new HashMap<>();
-        try(Connection con=SQLDataSource.getInstance().getSQLConnection()){
+        try(Connection con=dataSource.getConnection()){
             String psql = """
                     select *
-                    from semester
+                    from mybatis.semester
                     where begin_time <= ? and end_time >= ?
                     """;
             PreparedStatement pps = con.prepareStatement(psql);
@@ -632,12 +648,12 @@ public class MyStudentService implements StudentService {
             }
             String sql = """
                     select c.name, s.name, sc.instructor_id, i.full_name, sc.class_begin, sc.class_end, location, sc.day_of_week, sc.week_list
-                    from student
-                             join student_section ss on student.id = ss.student_id
-                             join section s on s.id = ss.section_id
-                             join course c on c.id = s.course_id
-                             join section_class sc on s.id = sc.section_id
-                             join instructor i on i.id = sc.instructor_id
+                    from mybatis.student
+                             join mybatis.student_section ss on student.id = ss.student_id
+                             join mybatis.section s on s.id = ss.section_id
+                             join mybatis.course c on c.id = s.course_id
+                             join mybatis.section_class sc on s.id = sc.section_id
+                             join mybatis.instructor i on i.id = sc.instructor_id
                     where student.id = ? and s.semester_id = ?""";
             PreparedStatement ps = con.prepareStatement(sql);
             ps.setInt(1,studentId);
@@ -685,14 +701,14 @@ public class MyStudentService implements StudentService {
 
     @Override
     public boolean passedPrerequisitesForCourse(int studentId, String courseId) {
-        try(Connection con=SQLDataSource.getInstance().getSQLConnection()) {
+        try(Connection con=dataSource.getConnection()) {
             //获取所有通过的课的id: passedCids
             String sql1= """
                     select distinct course_id
-                    from section
+                    from mybatis.section
                     where id in(
                         select section_id
-                        from student_section
+                        from mybatis.student_section
                         where student_id=? and mark>=60
                     )""";
             ArrayList<String> passedCids = Util.querySingle(con, sql1, studentId);
@@ -703,14 +719,15 @@ public class MyStudentService implements StudentService {
             return false;
         }
     }
+
     /**
      * 用于复用的辅助判断方法，判断passedCids是否满足了courseId的先修课要求
      */
     public boolean passedPre(ArrayList<String> passedCids,String courseId){
-        try (Connection con=SQLDataSource.getInstance().getSQLConnection()){
+        try (Connection con=dataSource.getConnection()){
             //1.获取布尔表达式
             //1.1获取先修课String: pre
-            String sql="select prerequisite from course where id=?";
+            String sql="select prerequisite from mybatis.course where id=?";
             String pre = (String)Util.querySingle(con, sql, courseId).get(0);
             if(pre==null){return true;}
             //1.2提取出pre中的课程id: eg:((MA101A OR MA101B) AND MA103A)
@@ -779,10 +796,10 @@ public class MyStudentService implements StudentService {
 
     @Override
     public Major getStudentMajor(int studentId) {
-        try(Connection con=SQLDataSource.getInstance().getSQLConnection()){
+        try(Connection con=dataSource.getConnection()){
             String sql = """
                     select m.id, m.name, m.department_id
-                    from student join major m on m.id = student.major_id
+                    from mybatis.student join mybatis.major m on m.id = student.major_id
                     where student.id = ?""";
             PreparedStatement ps = con.prepareStatement(sql);
             ps.setInt(1, studentId);
@@ -792,7 +809,7 @@ public class MyStudentService implements StudentService {
             int did = rs.getInt(3);
             String sql2 = """
                     select *
-                    from department
+                    from mybatis.department
                     where id = ?""";
             PreparedStatement ps2 = con.prepareStatement(sql2);
             ps2.setInt(1, did);

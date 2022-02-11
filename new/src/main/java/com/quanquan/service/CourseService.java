@@ -6,6 +6,7 @@ import com.quanquan.dto.CourseSectionClass;
 import com.quanquan.dto.Student;
 import com.quanquan.dto.prerequisite.Prerequisite;
 import com.quanquan.exception.IntegrityViolationException;
+import org.apache.ibatis.annotations.Mapper;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -15,9 +16,12 @@ import java.util.Set;
 
 @ParametersAreNonnullByDefault
 public interface CourseService {
+
+    List<CourseSection> getAllSections();
+
     /**
      * Add one course according to following parameters.
-     * If some of parameters are invalid, throw {@link IntegrityViolationException}
+     * If some parameters are invalid, throw {@link IntegrityViolationException}
      *
      * @param courseId represents the id of course. For example, CS307, CS309
      * @param courseName the name of course
@@ -82,7 +86,7 @@ public interface CourseService {
      * @param courseId if the key is non-existent, please throw an EntityNotFoundException.
      * @param semesterId if the key is non-existent, please throw an EntityNotFoundException.
      */
-    List<CourseSection> getCourseSectionsInSemester(String courseId, int semesterId);
+    List<CourseSection> getSectionsInSemester(String courseId, int semesterId);
 
     /**
      * If there is no Course about specific id, throw EntityNotFoundException.
